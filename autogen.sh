@@ -1,2 +1,2 @@
 autoreconf -i
-sudo mkdir -p /etc/feednix && sudo cp config.json /etc/feednix
+sudo mkdir -p /etc/xdg/feednix && sudo cp config.json /etc/xdg/feednix

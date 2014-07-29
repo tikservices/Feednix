@@ -325,6 +325,7 @@ void CursesProvider::control(){
 
                                          ctgMenuCallback(strdup(item_name(curItem)));
                                          currentCategoryRead = true;
+                                         curMenu = ctgMenu;
                                          break;
                                  }
                 }
