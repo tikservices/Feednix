@@ -59,6 +59,8 @@ to keep this project open source, hence this new method.
 
 Please visit this [page](https://feednix-jarkore.rhcloud.com) for details.
 
+##Changelog
+
 ###v0.8
 
 Many thanks to [lejenome](https://github.com/lejenome) for the following: 
