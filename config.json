@@ -22,6 +22,9 @@
                 "item_highlight" : 2,
                 "read_item" : 3
         },
+	"ctg_win_width" : 40,
+//	"view_win_height" : 200,
+	"view_win_height_per" : 50,
           // Count of posts to be retrived per request. Maximum is 10000
         "posts_retrive_count" : "500"
 }
