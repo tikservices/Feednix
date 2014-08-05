@@ -61,6 +61,8 @@ Please visit this [page](https://feednix-jarkore.rhcloud.com) for details.
 
 ###v0.8
 
+Many thanks to [lejenome](https://github.com/lejenome) for the following: 
+
 * use $TMPDIR (mkdtemp) for preview.html file to avoid unneeded disk access
 * add a new panel to shown a quick preview for current selected item (html formated by w3m) instead of the need to open w3m for previews
 * add 3 new config options to add some interface tweaks (ctg_win_width: to change ctgWin width, view_win_height: to set viewWin height, view_win_height_per: to set viewWin height percent that can be used instead of the previous option and overwirte it)
