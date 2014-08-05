@@ -103,10 +103,13 @@ void CursesProvider::init(){
 void CursesProvider::control(){
         int ch;
         MENU* curMenu;
-        if(totalPosts == 0)
+        if(totalPosts == 0){
                 curMenu = ctgMenu;
-        else
+        }
+        else{
                 curMenu = postsMenu;
+                changeSelectedItem(curMenu, REQ_UP_ITEM);
+        }
 
         ITEM* curItem = current_item(curMenu);
 
