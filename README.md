@@ -61,6 +61,8 @@ Please visit this [page](https://feednix-jarkore.rhcloud.com) for details.
 
 ##Changelog
 
+**The follwoing only lists major updates. For everything in between please see the ChangeLog**
+
 ###v0.8
 
 Many thanks to [lejenome](https://github.com/lejenome) for the following: 
