@@ -63,6 +63,7 @@ void CursesProvider::init(){
                 std::cerr << "ERROR: Couldn't not read config file" << std::endl;
                 exit(EXIT_FAILURE);
         }
+
 	if (ctgWinWidth == 0)
 		ctgWinWidth = CTG_WIN_WIDTH;
 	if (viewWinHeight == 0 && viewWinHeightPer == 0)
@@ -73,19 +74,22 @@ void CursesProvider::init(){
 	char *sys_tmpdir = getenv("TMPDIR");
 	if(!sys_tmpdir)
 		sys_tmpdir = "/tmp";
+
 	char * pathTemp = (char *)malloc(sizeof(char) * (strlen(sys_tmpdir) + 16));
 	strcpy(pathTemp, sys_tmpdir);
 	strcat(pathTemp, "/feednix.XXXXXX");
+
 	tmpdir = std::string(mkdtemp(pathTemp));
 	free(pathTemp);
 
         createCategoriesMenu();
         createPostsMenu();
+
 	viewWin = newwin(viewWinHeight, COLS - 2, (LINES - 2 - viewWinHeight), 1);
 
-	panels[2] = new_panel(viewWin);
         panels[0] = new_panel(ctgWin);
         panels[1] = new_panel(postsWin);
+	panels[2] = new_panel(viewWin);
 
         set_panel_userptr(panels[0], panels[1]);
         set_panel_userptr(panels[1], panels[0]);
@@ -121,9 +125,11 @@ void CursesProvider::control(){
                         case 10:
                                 if(curMenu == ctgMenu){
                                         top = (PANEL *)panel_userptr(top);
+
                                         attron(COLOR_PAIR(4));
                                         mvprintw(LINES-2, 0, "Updating stream...");
                                         attroff(COLOR_PAIR(4));
+
                                         refresh();
                                         update_panels();
 
@@ -470,23 +476,29 @@ void CursesProvider::ctgMenuCallback(char* label){
 
         win_show(postsWin, strdup("Posts"), 1, true);
         win_show(ctgWin, strdup("Categories"), 2, false);
+
+        changeSelectedItem(postsMenu, REQ_UP_ITEM);
 }
 void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         menu_driver(curMenu, req);
         ITEM* curItem = current_item(curMenu);
+
         if(curMenu != postsMenu ||  !curItem) return;
+
         PostData* data = feedly.getSinglePostData(item_index(curItem));
         std::string PREVIEW_PATH = tmpdir + "/preview.html";
         std::ofstream myfile (PREVIEW_PATH.c_str());
+
         if (myfile.is_open())
                myfile << data->content;
+
         myfile.close();
-        def_prog_mode();
-        endwin();
+
         FILE* stream = popen(std::string("w3m -dump -cols " + std::to_string(COLS - 2) + " " + PREVIEW_PATH).c_str(), "r");
-        reset_prog_mode();
+
         std::string content;
         char buffer[256];
+
         if (stream) {
 	        while (!feof(stream))
 	            if (fgets(buffer, 256, stream) != NULL) content.append(buffer);

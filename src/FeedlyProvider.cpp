@@ -85,6 +85,11 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
 
         if(data == NULL || curl_res != CURLE_OK || !parsingSuccesful){
                 std::cerr << "ERROR: Failed to Retrive Categories" << std::endl;
+                if(!parsingSuccesful)
+                        std::cerr << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;
+                if(curl_res != CURLE_OK)
+                        fprintf(stderr, "curl_easy_perform() failed : %s\n", curl_easy_strerror(curl_res));
+
                 exit(EXIT_FAILURE);
                 return NULL;
         }
