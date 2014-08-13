@@ -16,6 +16,7 @@ class CursesProvider{
                 CursesProvider(bool verbose, bool change);
                 void init();
                 void control();
+                void cleanup();
         private:
                 FeedlyProvider feedly;
                 WINDOW *ctgWin, *postsWin, *viewWin;
@@ -24,8 +25,7 @@ class CursesProvider{
                 MENU *ctgMenu, *postsMenu;
                 std::string lastEntryRead, tmpdir;
                 int totalPosts = 0, numRead = 0, numUnread = 0;
-		int viewWinHeightPer = VIEW_WIN_HEIGHT_PER, viewWinHeight = 0,
-		    ctgWinWidth = CTG_WIN_WIDTH;
+		int viewWinHeightPer = VIEW_WIN_HEIGHT_PER, viewWinHeight = 0, ctgWinWidth = CTG_WIN_WIDTH;
                 bool currentCategoryRead;
                 void createCategoriesMenu(); 
                 void createPostsMenu(); 
@@ -38,7 +38,6 @@ class CursesProvider{
                 void print_in_center(WINDOW *win, int starty, int startx, int height, int width, char *string, chtype color);
                 void clear_updateline();
                 void update_counter();
-                void cleanup();
 };
 
 #endif

@@ -9,14 +9,17 @@
 #include "CursesProvider.h"
 
 #define HOME_PATH getenv("HOME")
+CursesProvider *curses;
 
 void atExitFunction(void){
         system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -delete 2> /dev/null").c_str());
+        curses->cleanup();
 }
 
 void sighandler(int signum){
         system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -delete 2> /dev/null").c_str());
         signal(signum, SIG_DFL);
+        curses->cleanup();
         kill(getpid(), signum);
 }
 
@@ -25,11 +28,11 @@ void printUsage();
 int main(int argc, char **argv){
         signal(SIGINT, sighandler);
         signal(SIGTERM, sighandler);
+        signal(SIGSEGV, sighandler);
         atexit(atExitFunction);
 
         bool verboseEnabled = false;
         bool changeTokens = false;
-        CursesProvider *curses;
  
         if(fopen(std::string(std::string(HOME_PATH) + "/.config/feednix/config.json").c_str(), "r") == NULL){
                 system(std::string("mkdir " + std::string(HOME_PATH) + "/.config/feednix").c_str());
