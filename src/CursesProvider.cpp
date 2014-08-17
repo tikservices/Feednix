@@ -94,15 +94,15 @@ void CursesProvider::init(){
         set_panel_userptr(panels[0], panels[1]);
         set_panel_userptr(panels[1], panels[0]);
 
-        update_panels();
-
         attron(COLOR_PAIR(5));
         mvprintw(LINES - 1, 0, "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
         attroff(COLOR_PAIR(5));
-        doupdate();
 
         top = panels[1];
         top_panel(top);
+
+        update_panels();
+        doupdate();
 }
 void CursesProvider::control(){
         int ch;
@@ -125,14 +125,19 @@ void CursesProvider::control(){
                         case 10:
                                 if(curMenu == ctgMenu){
                                         top = (PANEL *)panel_userptr(top);
+
                                         attron(COLOR_PAIR(4));
                                         mvprintw(LINES-2, 0, "Updating stream...");
                                         attroff(COLOR_PAIR(4));
+
                                         refresh();
                                         update_panels();
+
                                         ctgMenuCallback(strdup(item_name(current_item(curMenu))));
+
                                         clear_updateline();
                                         top_panel(top);
+
                                         if(currentCategoryRead){
                                                 curMenu = ctgMenu;
                                         }
@@ -372,12 +377,11 @@ void CursesProvider::createCategoriesMenu(){
 }
 void CursesProvider::createPostsMenu(){
         int height, width;
-
         int n_choices, i = 0;
 
         const std::vector<PostData> *posts = feedly.giveStreamPosts("All");
 
-        if(posts != NULL){
+        if(posts != NULL && posts->size() > 0){
                 totalPosts = posts->size();
                 numUnread = totalPosts;
                 n_choices = posts->size();
@@ -412,7 +416,7 @@ void CursesProvider::createPostsMenu(){
 
         set_menu_mark(postsMenu, "*");
 
-        win_show(postsWin, strdup("Posts"),  1, true);
+        win_show(postsWin, strdup("Posts"), 1, true);
 
         menu_opts_off(postsMenu, O_SHOWDESC);
 

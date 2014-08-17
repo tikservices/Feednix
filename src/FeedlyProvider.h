@@ -47,17 +47,19 @@ class FeedlyProvider{
         private:
                 CURL *curl;
                 CURLcode curl_res;
+                std::ofstream log_stream;
                 std::string feedly_url;
                 std::string userAuthCode;
                 std::string TOKEN_PATH, TEMP_PATH, COOKIE_PATH, rtrv_count;
                 UserData user_data;
-                bool verboseFlag, changeTokens;
+                bool verboseFlag, changeTokens, isLogStreamOpen=false;
                 std::vector<PostData> feeds;
                 void getCookies();
                 void enableVerbose();
                 void curl_retrive(const std::string&);
                 void extract_galx_value();
                 void echo(bool on);
+                void openLogStream();
 };
 
 #endif

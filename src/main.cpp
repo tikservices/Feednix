@@ -12,12 +12,13 @@
 CursesProvider *curses;
 
 void atExitFunction(void){
-        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -delete 2> /dev/null").c_str());
+        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -and -not -name \'log.txt\' -delete 2> /dev/null").c_str());
+        system("rm -R /tmp/feednix*");
         curses->cleanup();
 }
 
 void sighandler(int signum){
-        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -delete 2> /dev/null").c_str());
+        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -and -not -name \'log.txt\' -delete 2> /dev/null").c_str());
         signal(signum, SIG_DFL);
         curses->cleanup();
         kill(getpid(), signum);

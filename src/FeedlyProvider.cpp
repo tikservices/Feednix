@@ -6,6 +6,7 @@
 #include <istream>
 #include <termios.h>
 #include <unistd.h>
+#include <ctime>
 
 #include "FeedlyProvider.h"
 
@@ -36,8 +37,9 @@ void FeedlyProvider::authenticateUser(){
         bool parsingSuccesful = reader.parse(initialConfig, root);
 
         if(!parsingSuccesful){
-                std::cerr << "ERROR: Log In Failed - Unable to read from config file" << std::endl;
-                std::cerr << reader.getFormatedErrorMessages() << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "ERROR: Log In Failed - Unable to read from config file" << std::endl;
+                log_stream << reader.getFormatedErrorMessages() << std::endl;
                 exit(EXIT_FAILURE);
         }
 
@@ -84,11 +86,12 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
         parsingSuccesful = reader.parse(data, root);
 
         if(data == NULL || curl_res != CURLE_OK || !parsingSuccesful){
-                std::cerr << "ERROR: Failed to Retrive Categories" << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "ERROR: Failed to Retrive Categories" << std::endl;
                 if(!parsingSuccesful)
-                        std::cerr << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;
+                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;
                 if(curl_res != CURLE_OK)
-                        fprintf(stderr, "curl_easy_perform() failed : %s\n", curl_easy_strerror(curl_res));
+                        log_stream << "curl_easy_perform() failed : " << curl_easy_strerror(curl_res) << std::endl;
 
                 exit(EXIT_FAILURE);
                 return NULL;
@@ -124,10 +127,11 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
 
 
         if(data == NULL || curl_res != CURLE_OK || !parsingSuccesful){
+                if(!isLogStreamOpen) openLogStream();
                 if(!parsingSuccesful)
-                        std::cerr << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;
+                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;
                 if(curl_res != CURLE_OK)
-                        fprintf(stderr, "curl_easy_perform() failed : %s\n", curl_easy_strerror(curl_res));
+                        log_stream << "curl_easy_perform() failed : " << curl_easy_strerror(curl_res) << std::endl;
 
                 exit(EXIT_FAILURE);
                 return NULL;
@@ -181,7 +185,8 @@ bool FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
 
         fclose(data_holder);
         if(curl_res != CURLE_OK){
-                std::cerr << "Could not mark post(s) as read" << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not mark post(s) as read" << std::endl;
                 return false;
         }
 
@@ -224,7 +229,8 @@ bool FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
 
         fclose(data_holder);
         if(curl_res != CURLE_OK){
-                std::cerr << "Could not mark post(s) as unread" << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not mark post(s) as unread" << std::endl;
                 return false;
         }
 
@@ -267,7 +273,8 @@ bool FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
 
         fclose(data_holder);
         if(curl_res != CURLE_OK){
-                std::cerr << "Could not mark post(s) as saved" << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not mark post(s) as saved" << std::endl;
                 return false;
         }
 
@@ -310,7 +317,8 @@ bool FeedlyProvider::markPostsUnsaved(const std::vector<std::string>* ids){
 
         fclose(data_holder);
         if(curl_res != CURLE_OK){
-                std::cerr << "Could not mark post(s) as unsaved" << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not mark post(s) as unsaved" << std::endl;
                 return false;
         }
 
@@ -353,7 +361,8 @@ bool FeedlyProvider::markCategoriesRead(const std::string& id, const std::string
 
         fclose(data_holder);
         if(curl_res != CURLE_OK){
-                std::cerr << "Could not mark category(ies) as read" << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not mark category(ies) as read" << std::endl;
                 return false;
         }
 
@@ -402,7 +411,8 @@ bool FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, 
 
         fclose(data_holder);
         if(curl_res != CURLE_OK){
-                std::cerr << "Could not add subscription" << std::endl;
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not add subscription" << std::endl;
                 return false;
         }
 
@@ -447,6 +457,19 @@ void FeedlyProvider::curl_retrive(const std::string& uri){
         fclose(data_holder);
         curl_easy_cleanup(curl);
 }
+void FeedlyProvider::openLogStream(){
+        if(!log_stream.is_open()){
+                const char* log_path = std::string(std::string(HOME_PATH) + "/.config/feednix/log.txt").c_str();
+                log_stream.open(log_path, std::ofstream::out | std::ofstream::app);
+
+                time_t current = time(NULL);
+                char* dt = ctime(&current);
+
+                log_stream << "======== " << std::string(dt) << "\n";
+                
+                isLogStreamOpen = true;
+        }
+}
 void FeedlyProvider::echo(bool on = true){
         struct termios settings;
         tcgetattr( STDIN_FILENO, &settings );
@@ -457,4 +480,6 @@ void FeedlyProvider::echo(bool on = true){
 }
 void FeedlyProvider::curl_cleanup(){
         curl_global_cleanup();
+        if(log_stream.is_open())
+                log_stream.close();
 }
