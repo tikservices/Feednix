@@ -36,7 +36,7 @@ to keep this project open source, hence this new method.
 
 ### Global Options
 
-* F1 : Exit
+* q : Exit
 * Vim Key mappings for navigation (j,k)
 
 ### Post List Options
