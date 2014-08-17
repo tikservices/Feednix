@@ -1,3 +1,15 @@
+0.8.3
+==========
+* fixed bug causing posts window to not appear if no posts are available
+* implemented log system
+* added command to clean up tmp files
+
+0.8.2
+==========
+* replaced F1 with q as exit key
+* added extra error check to clean up
+* fixed bug causing terminals to break if program exited unexpectedly
+
 0.8.1
 ==========
 * fixed bug causing no preview to show on program start
@@ -29,7 +41,6 @@ Many thanks to lejenome for the following:
 
 0.7
 ==========
-
 * changed log in method to developer tokens
 * added options to manually change developer tokens
 
