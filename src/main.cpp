@@ -13,7 +13,7 @@ CursesProvider *curses;
 
 void atExitFunction(void){
         system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -and -not -name \'log.txt\' -delete 2> /dev/null").c_str());
-        system("rm -R /tmp/feednix*");
+        system("rm -R /tmp/feednix* 2> /dev/null");
         curses->cleanup();
 }
 
@@ -36,7 +36,7 @@ int main(int argc, char **argv){
         bool changeTokens = false;
  
         if(fopen(std::string(std::string(HOME_PATH) + "/.config/feednix/config.json").c_str(), "r") == NULL){
-                system(std::string("mkdir " + std::string(HOME_PATH) + "/.config/feednix").c_str());
+                system(std::string("mkdir -P" + std::string(HOME_PATH) + "/.config/feednix &> /dev/null").c_str());
                 system(std::string("cp /etc/xdg/feednix/config.json " + std::string(HOME_PATH) + "/.config/feednix/config.json").c_str());
                 system(std::string("chmod 600 " + std::string(HOME_PATH) + "/.config/feednix/config.json").c_str());
         }

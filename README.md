@@ -17,6 +17,10 @@ Then run your standard make commands. Here is a one liner:
 
 `./configure && make && sudo make install`
 
+Thank you @chrisjohnston for mentioning the following dependencies for Ubuntu:
+
+`sudo apt-get install dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev`
+
 ## Clarification on Sign In Method (PLEASE READ)
 
 Due to the fact that this is open source, the administrators at Feedly have
