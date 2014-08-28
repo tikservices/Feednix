@@ -479,10 +479,7 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
 
         wclear(viewWin);
         mvwprintw(viewWin, 1, 1, "%s", content.c_str());
-        char* post = (char *)malloc(sizeof(char) * COLS);
-               strcpy(post, std::string(data->originTitle + " - " + data->title).c_str());
-        update_statusline(NULL, post, true);
-        free(post);
+        update_statusline(NULL, std::string(data->originTitle + " - " + data->title).c_str(), true);
         update_panels();
         markItemRead(curItem);
 }
@@ -607,7 +604,7 @@ void CursesProvider::clear_statusline(){
         move(LINES-2, 0);
         clrtoeol();
 }
-void CursesProvider::update_statusline(char* update, char* post, bool showCounter){
+void CursesProvider::update_statusline(const char* update, const char* post, bool showCounter){
         if (update != NULL)
                 statusLine[0] = std::string(update);
         if (post != NULL)

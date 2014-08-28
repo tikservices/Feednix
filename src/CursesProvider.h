@@ -37,7 +37,7 @@ class CursesProvider{
                 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
                 void print_in_center(WINDOW *win, int starty, int startx, int height, int width, char *string, chtype color);
                 void clear_statusline();
-                void update_statusline(char* update, char* post, bool showCounter);
+                void update_statusline(const char* update, const char* post, bool showCounter);
 		void update_infoline(const char* info);
 };
 
