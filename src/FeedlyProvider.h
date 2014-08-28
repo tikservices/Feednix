@@ -25,6 +25,7 @@ struct PostData{
         std::string title;
         std::string id;
         std::string originURL;
+        std::string originTitle;
 };
 
 class FeedlyProvider{

@@ -142,7 +142,7 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
         }
 
         for(unsigned int i = 0; i < root["items"].size(); i++)
-                feeds.push_back(PostData{root["items"][i]["summary"]["content"].asString(), root["items"][i]["title"].asString(), root["items"][i]["id"].asString(), root["items"][i]["originId"].asString()});
+                feeds.push_back(PostData{root["items"][i]["summary"]["content"].asString(), root["items"][i]["title"].asString(), root["items"][i]["id"].asString(), root["items"][i]["originId"].asString(), root["items"][i]["origin"]["title"].asString()});
 
         data.close();
         return &(feeds);
