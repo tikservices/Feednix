@@ -94,9 +94,7 @@ void CursesProvider::init(){
         set_panel_userptr(panels[0], panels[1]);
         set_panel_userptr(panels[1], panels[0]);
 
-        attron(COLOR_PAIR(5));
-        mvprintw(LINES - 1, 0, "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
-        attroff(COLOR_PAIR(5));
+        update_infoline("Enter: See Preview  A: mark all read  u: mark unread  r: mark read  s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
 
         top = panels[1];
         top_panel(top);
@@ -138,10 +136,7 @@ void CursesProvider::control(){
                                         }
                                         else{
                                                 curMenu = postsMenu;
-                                                move(LINES-1, 0);
-                                                clrtoeol();
-                                                attron(COLOR_PAIR(5));
-                                                mvprintw(LINES - 1, 0, "Enter: See Preview A: mark all read u: mark unread r: mark read R: refresh o: Open in plain-text O: Open in Browser F1: exit");
+                                                update_infoline("Enter: See Preview A: mark all read u: mark unread r: mark read R: refresh o: Open in plain-text O: Open in Browser F1: exit");
                                         }
                                 }
                                 else if(panel_window(top) == postsWin)
@@ -154,11 +149,7 @@ void CursesProvider::control(){
                                         win_show(postsWin, strdup("Posts"), 1, true);
                                         win_show(ctgWin, strdup("Categories"), 2, false);
 
-                                        move(LINES-1, 0);
-                                        clrtoeol();
-                                        attron(COLOR_PAIR(5));
-                                        mvprintw(LINES - 1, 0, "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
-                                        attroff(COLOR_PAIR(5));
+                                        update_infoline("Enter: See Preview  A: mark all read  u: mark unread  r: mark read  R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
                                         refresh();
                                 }
                                 else{
@@ -166,12 +157,7 @@ void CursesProvider::control(){
                                         win_show(ctgWin, strdup("Categories"), 1, true);
                                         win_show(postsWin, strdup("Posts"), 2, false);
 
-                                        move(LINES-1, 0);
-                                        clrtoeol();
-
-                                        attron(COLOR_PAIR(5));
-                                        mvprintw(LINES - 1, 0, "Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit");
-                                        attroff(COLOR_PAIR(5));
+                                        update_infoline("Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit");
 
                                         refresh();
                                 }
@@ -647,6 +633,13 @@ void CursesProvider::update_statusline(char* update, char* post, bool showCounte
         attroff(COLOR_PAIR(3));
         refresh();
         update_panels();
+}
+void CursesProvider::update_infoline(const char* info){
+        move(LINES-1, 0);
+        clrtoeol();
+        attron(COLOR_PAIR(5));
+        mvprintw(LINES - 1, 0, info);
+        attroff(COLOR_PAIR(5));
 }
 void CursesProvider::cleanup(){
         if(ctgMenu != NULL){
