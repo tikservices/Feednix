@@ -44,7 +44,7 @@ int main(int argc, char **argv){
 
         char *sys_tmpdir = getenv("TMPDIR");
         if(!sys_tmpdir)
-                sys_tmpdir = "/tmp";
+                sys_tmpdir = (char *)"/tmp";
 
         char * pathTemp = (char *)malloc(sizeof(char) * (strlen(sys_tmpdir) + 16));
         strcpy(pathTemp, sys_tmpdir);

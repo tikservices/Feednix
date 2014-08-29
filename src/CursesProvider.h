@@ -20,7 +20,7 @@ class CursesProvider{
         private:
                 FeedlyProvider feedly;
                 WINDOW *ctgWin, *postsWin, *viewWin;
-                PANEL  *panels[2], *top;
+                PANEL  *panels[3], *top;
                 ITEM **ctgItems, **postsItems;
                 MENU *ctgMenu, *postsMenu;
                 std::string lastEntryRead, statusLine[3];
