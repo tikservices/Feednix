@@ -21,6 +21,7 @@
 #define CTRLD   4
 
 #define HOME_PATH getenv("HOME")
+extern std::string TMPDIR;
 
 CursesProvider::CursesProvider(bool verbose, bool change){
         feedly.setVerbose(verbose);
@@ -70,8 +71,6 @@ void CursesProvider::init(){
                 viewWinHeightPer = VIEW_WIN_HEIGHT_PER;
         if (viewWinHeight == 0)
                 viewWinHeight = (unsigned int)(((LINES - 2) * viewWinHeightPer) / 100);
-
-        tmpdir = feedly.tmpdir;
 
         createCategoriesMenu();
         createPostsMenu();
@@ -449,7 +448,7 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         if(curMenu != postsMenu ||  !curItem) return;
 
         PostData* data = feedly.getSinglePostData(item_index(curItem));
-        std::string PREVIEW_PATH = tmpdir + "/preview.html";
+        std::string PREVIEW_PATH = TMPDIR + "/preview.html";
         std::ofstream myfile (PREVIEW_PATH.c_str());
 
         if (myfile.is_open())
@@ -478,7 +477,7 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
         PostData* container = feedly.getSinglePostData(item_index(item));
 
         if(preview){
-                std::string PREVIEW_PATH = tmpdir + "/preview.html";
+                std::string PREVIEW_PATH = TMPDIR + "/preview.html";
                 std::ofstream myfile (PREVIEW_PATH.c_str());
 
                 if (myfile.is_open())
@@ -499,7 +498,7 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
         }
         markItemRead(item);
         lastEntryRead = item_description(item);
-        system(std::string("rm " + tmpdir + "/preview.html 2> /dev/null").c_str());
+        system(std::string("rm " + TMPDIR + "/preview.html 2> /dev/null").c_str());
 }
 void CursesProvider::markItemRead(ITEM* item){
         if(item_opts(item)){
