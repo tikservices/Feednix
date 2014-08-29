@@ -1,0 +1,15 @@
+language: cpp
+compiler:
+            - gcc
+            - clang
+env: OMP_NUM_THREADS=4
+before_install:
+            - sudo apt-get update -qq
+install:
+            - sudo apt-get install -qq dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev
+            - wget http://mirrors.kernel.org/ubuntu/pool/main/a/autoconf/autoconf_2.69-6_all.deb
+            - sudo dpkg -i autoconf_2.69-6_all.deb
+before_script:
+            - ./autogen.sh
+script:
+            - ./configure && make
