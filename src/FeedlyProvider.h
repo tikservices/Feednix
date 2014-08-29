@@ -45,6 +45,7 @@ class FeedlyProvider{
                 void setVerbose(bool value);
                 void setChangeTokensFlag(bool value);
                 void curl_cleanup();
+                std::string tmpdir;
         private:
                 CURL *curl;
                 CURLcode curl_res;

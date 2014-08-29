@@ -7,6 +7,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <ctime>
+#include <string.h>
 
 #include "FeedlyProvider.h"
 
@@ -16,7 +17,18 @@ FeedlyProvider::FeedlyProvider(){
         curl_global_init(CURL_GLOBAL_DEFAULT);
         verboseFlag = false;
 
-        TEMP_PATH = std::string(HOME_PATH) + "/.config/feednix/temp.txt";
+        char *sys_tmpdir = getenv("TMPDIR");
+        if(!sys_tmpdir)
+                sys_tmpdir = "/tmp";
+
+        char * pathTemp = (char *)malloc(sizeof(char) * (strlen(sys_tmpdir) + 16));
+        strcpy(pathTemp, sys_tmpdir);
+        strcat(pathTemp, "/feednix.XXXXXX");
+
+        tmpdir = std::string(mkdtemp(pathTemp));
+        free(pathTemp);
+
+        TEMP_PATH = tmpdir + "/temp.txt";
 
         Json::Value root;
         Json::Reader reader;

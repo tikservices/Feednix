@@ -71,16 +71,7 @@ void CursesProvider::init(){
         if (viewWinHeight == 0)
                 viewWinHeight = (unsigned int)(((LINES - 2) * viewWinHeightPer) / 100);
 
-        char *sys_tmpdir = getenv("TMPDIR");
-        if(!sys_tmpdir)
-                sys_tmpdir = "/tmp";
-
-        char * pathTemp = (char *)malloc(sizeof(char) * (strlen(sys_tmpdir) + 16));
-        strcpy(pathTemp, sys_tmpdir);
-        strcat(pathTemp, "/feednix.XXXXXX");
-
-        tmpdir = std::string(mkdtemp(pathTemp));
-        free(pathTemp);
+        tmpdir = feedly.tmpdir;
 
         createCategoriesMenu();
         createPostsMenu();
