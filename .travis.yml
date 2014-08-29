@@ -1,7 +1,5 @@
 language: cpp
-compiler:
-            - gcc
-            - clang
+compiler: clang
 env: OMP_NUM_THREADS=4
 before_install:
             - sudo apt-get update -qq
