@@ -21,6 +21,7 @@
 #define CTRLD   4
 
 #define HOME_PATH getenv("HOME")
+extern std::string TMPDIR;
 
 CursesProvider::CursesProvider(bool verbose, bool change){
         feedly.setVerbose(verbose);
@@ -53,9 +54,9 @@ void CursesProvider::init(){
                 init_pair(6, root["colors"]["item_text"].asInt(), root["colors"]["background"].asInt());
                 init_pair(7, root["colors"]["item_highlight"].asInt(), root["colors"]["background"].asInt());
                 init_pair(8, root["colors"]["read_item"].asInt(), root["colors"]["background"].asInt());
-		ctgWinWidth = root["ctg_win_width"].asInt();
-		viewWinHeight = root["view_win_height"].asInt();
-		viewWinHeightPer = root["view_win_height_per"].asInt();
+                ctgWinWidth = root["ctg_win_width"].asInt();
+                viewWinHeight = root["view_win_height"].asInt();
+                viewWinHeightPer = root["view_win_height_per"].asInt();
         }
         else{
                 endwin();
@@ -64,39 +65,26 @@ void CursesProvider::init(){
                 exit(EXIT_FAILURE);
         }
 
-	if (ctgWinWidth == 0)
-		ctgWinWidth = CTG_WIN_WIDTH;
-	if (viewWinHeight == 0 && viewWinHeightPer == 0)
-		viewWinHeightPer = VIEW_WIN_HEIGHT_PER;
-	if (viewWinHeight == 0)
-		viewWinHeight = (unsigned int)(((LINES - 2) * viewWinHeightPer) / 100);
-
-	char *sys_tmpdir = getenv("TMPDIR");
-	if(!sys_tmpdir)
-		sys_tmpdir = "/tmp";
-
-	char * pathTemp = (char *)malloc(sizeof(char) * (strlen(sys_tmpdir) + 16));
-	strcpy(pathTemp, sys_tmpdir);
-	strcat(pathTemp, "/feednix.XXXXXX");
-
-	tmpdir = std::string(mkdtemp(pathTemp));
-	free(pathTemp);
+        if (ctgWinWidth == 0)
+                ctgWinWidth = CTG_WIN_WIDTH;
+        if (viewWinHeight == 0 && viewWinHeightPer == 0)
+                viewWinHeightPer = VIEW_WIN_HEIGHT_PER;
+        if (viewWinHeight == 0)
+                viewWinHeight = (unsigned int)(((LINES - 2) * viewWinHeightPer) / 100);
 
         createCategoriesMenu();
         createPostsMenu();
 
-	viewWin = newwin(viewWinHeight, COLS - 2, (LINES - 2 - viewWinHeight), 1);
+        viewWin = newwin(viewWinHeight, COLS - 2, (LINES - 2 - viewWinHeight), 1);
 
         panels[0] = new_panel(ctgWin);
         panels[1] = new_panel(postsWin);
-	panels[2] = new_panel(viewWin);
+        panels[2] = new_panel(viewWin);
 
         set_panel_userptr(panels[0], panels[1]);
         set_panel_userptr(panels[1], panels[0]);
 
-        attron(COLOR_PAIR(5));
-        mvprintw(LINES - 1, 0, "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
-        attroff(COLOR_PAIR(5));
+        update_infoline("Enter: See Preview  A: mark all read  u: mark unread  r: mark read  s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
 
         top = panels[1];
         top_panel(top);
@@ -117,8 +105,6 @@ void CursesProvider::control(){
 
         ITEM* curItem = current_item(curMenu);
 
-        update_counter();
-
         while((ch = getch()) != KEY_F(1) && ch != 'q'){
                 curItem = current_item(curMenu);
                 switch(ch){
@@ -126,16 +112,13 @@ void CursesProvider::control(){
                                 if(curMenu == ctgMenu){
                                         top = (PANEL *)panel_userptr(top);
 
-                                        attron(COLOR_PAIR(4));
-                                        mvprintw(LINES-2, 0, "Updating stream...");
-                                        attroff(COLOR_PAIR(4));
+                                        update_statusline("[Updateing stream]", "", false);
 
                                         refresh();
                                         update_panels();
 
                                         ctgMenuCallback(strdup(item_name(current_item(curMenu))));
 
-                                        clear_updateline();
                                         top_panel(top);
 
                                         if(currentCategoryRead){
@@ -143,10 +126,7 @@ void CursesProvider::control(){
                                         }
                                         else{
                                                 curMenu = postsMenu;
-                                                move(LINES-1, 0);
-                                                clrtoeol();
-                                                attron(COLOR_PAIR(5));
-                                                mvprintw(LINES - 1, 0, "Enter: See Preview A: mark all read u: mark unread r: mark read R: refresh o: Open in plain-text O: Open in Browser F1: exit");
+                                                update_infoline("Enter: See Preview A: mark all read u: mark unread r: mark read R: refresh o: Open in plain-text O: Open in Browser F1: exit");
                                         }
                                 }
                                 else if(panel_window(top) == postsWin)
@@ -159,11 +139,7 @@ void CursesProvider::control(){
                                         win_show(postsWin, strdup("Posts"), 1, true);
                                         win_show(ctgWin, strdup("Categories"), 2, false);
 
-                                        move(LINES-1, 0);
-                                        clrtoeol();
-                                        attron(COLOR_PAIR(5));
-                                        mvprintw(LINES - 1, 0, "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
-                                        attroff(COLOR_PAIR(5));
+                                        update_infoline("Enter: See Preview  A: mark all read  u: mark unread  r: mark read  R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
                                         refresh();
                                 }
                                 else{
@@ -171,12 +147,7 @@ void CursesProvider::control(){
                                         win_show(ctgWin, strdup("Categories"), 1, true);
                                         win_show(postsWin, strdup("Posts"), 2, false);
 
-                                        move(LINES-1, 0);
-                                        clrtoeol();
-
-                                        attron(COLOR_PAIR(5));
-                                        mvprintw(LINES - 1, 0, "Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit");
-                                        attroff(COLOR_PAIR(5));
+                                        update_infoline("Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit");
 
                                         refresh();
                                 }
@@ -201,15 +172,16 @@ void CursesProvider::control(){
                                                  std::vector<std::string> *temp = new std::vector<std::string>;
                                                  temp->push_back(item_description(curItem));
 
-                                                 mvprintw(LINES-2, 0, "Marking post unread...");
+                                                 update_statusline("[Marking post unread]", NULL, true);
                                                  refresh();
 
                                                  feedly.markPostsUnread(temp);
-                                                 clear_updateline();
 
                                                  item_opts_on(curItem, O_SELECTABLE);
                                                  numRead--;
                                                  numUnread++;
+
+                                                 update_statusline("", NULL, true);
                                          }
 
 
@@ -223,13 +195,11 @@ void CursesProvider::control(){
                                          std::vector<std::string> *temp = new std::vector<std::string>;
                                          temp->push_back(item_description(curItem));
 
-                                         attron(COLOR_PAIR(4));
-                                         mvprintw(LINES-2, 0, "Marking post saved...");
-                                         attroff(COLOR_PAIR(4));
+                                         update_statusline("[Marking post saved]", NULL, true);
                                          refresh();
 
                                          feedly.markPostsSaved(temp);
-                                         clear_updateline();
+                                         update_statusline("", NULL, true);
 
                                          break;
                                  }
@@ -237,25 +207,20 @@ void CursesProvider::control(){
                                          std::vector<std::string> *temp = new std::vector<std::string>;
                                          temp->push_back(item_description(curItem));
 
-                                         attron(COLOR_PAIR(4));
-                                         mvprintw(LINES-2, 0, "Marking post Unsaved...");
-                                         attroff(COLOR_PAIR(4));
+                                         update_statusline("[Marking post Unsaved]", NULL, true);
                                          refresh();
 
                                          feedly.markPostsUnsaved(temp);
-                                         clear_updateline();
+                                         update_statusline("", NULL, true);
 
                                          break;
                                  }
                         case 'R':
                                  wclear(viewWin);
-                                 attron(COLOR_PAIR(4));
-                                 mvprintw(LINES-2, 0, "Updating stream...");
-                                 attroff(COLOR_PAIR(4));
+                                 update_statusline("[Updating stream]", "", false);
                                  refresh();
 
                                  ctgMenuCallback(strdup(item_name(current_item(ctgMenu))));
-                                 clear_updateline();
                                  break;
                         case 'o':
                                  postsMenuCallback(curItem, false);
@@ -280,6 +245,7 @@ void CursesProvider::control(){
                                          char ctg[200];
                                          echo();
 
+                                         clear_statusline();
                                          attron(COLOR_PAIR(4));
                                          mvprintw(LINES - 2, 0, "[ENTER FEED]:");
                                          mvgetnstr(LINES-2, strlen("[ENTER FEED]") + 1, feed, 200);
@@ -305,25 +271,22 @@ void CursesProvider::control(){
                                          noecho();
                                          clrtoeol();
 
-                                         mvprintw(LINES-2, 0, "Adding subscription...");
-                                         attroff(COLOR_PAIR(4));
+                                         update_statusline("[Adding subscription]", NULL, true);
                                          refresh();
 
                                          if(strlen(feed) != 0)
                                                  feedly.addSubscription(false, feed, arrayTokens, title);
 
-                                         clear_updateline();
+                                         update_statusline("", NULL, true);
                                          break;
                                  }
                         case 'A':{
                                          wclear(viewWin);
-                                         attron(COLOR_PAIR(4));
-                                         mvprintw(LINES-2, 0, "Marking category read...");
-                                         attroff(COLOR_PAIR(4));
+                                         update_statusline("[Marking category read]", "", true);
                                          refresh();
 
                                          feedly.markCategoriesRead(item_description(current_item(ctgMenu)), lastEntryRead);
-                                         clear_updateline();
+                                         update_statusline("", NULL, true);
 
                                          ctgMenuCallback(strdup(item_name(curItem)));
                                          currentCategoryRead = true;
@@ -331,7 +294,6 @@ void CursesProvider::control(){
                                          break;
                                  }
                 }
-                update_counter();
                 update_panels();
                 doupdate();
         }
@@ -447,6 +409,7 @@ void CursesProvider::ctgMenuCallback(char* label){
                 win_show(ctgWin, strdup("Categories"), 1, true);
 
                 currentCategoryRead = true;
+                update_statusline("", "", true);
                 return;
         }
 
@@ -472,6 +435,7 @@ void CursesProvider::ctgMenuCallback(char* label){
         lastEntryRead = item_description(items[0]);
         currentCategoryRead = false;
 
+        update_statusline("", NULL, true);
         win_show(postsWin, strdup("Posts"), 1, true);
         win_show(ctgWin, strdup("Categories"), 2, false);
 
@@ -484,7 +448,7 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         if(curMenu != postsMenu ||  !curItem) return;
 
         PostData* data = feedly.getSinglePostData(item_index(curItem));
-        std::string PREVIEW_PATH = tmpdir + "/preview.html";
+        std::string PREVIEW_PATH = TMPDIR + "/preview.html";
         std::ofstream myfile (PREVIEW_PATH.c_str());
 
         if (myfile.is_open())
@@ -505,6 +469,7 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
 
         wclear(viewWin);
         mvwprintw(viewWin, 1, 1, "%s", content.c_str());
+        update_statusline(NULL, std::string(data->originTitle + " - " + data->title).c_str(), true);
         update_panels();
         markItemRead(curItem);
 }
@@ -512,7 +477,7 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
         PostData* container = feedly.getSinglePostData(item_index(item));
 
         if(preview){
-                std::string PREVIEW_PATH = tmpdir + "/preview.html";
+                std::string PREVIEW_PATH = TMPDIR + "/preview.html";
                 std::ofstream myfile (PREVIEW_PATH.c_str());
 
                 if (myfile.is_open())
@@ -533,14 +498,12 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
         }
         markItemRead(item);
         lastEntryRead = item_description(item);
-        system(std::string("rm " + tmpdir + "/preview.html 2> /dev/null").c_str());
+        system(std::string("rm " + TMPDIR + "/preview.html 2> /dev/null").c_str());
 }
 void CursesProvider::markItemRead(ITEM* item){
         if(item_opts(item)){
                 item_opts_off(item, O_SELECTABLE);
-                attron(COLOR_PAIR(4));
-                mvprintw(LINES-2, 0, "Marking post read...");
-                attroff(COLOR_PAIR(4));
+                update_statusline("[Marking post read]", NULL, true);
                 refresh();
 
                 PostData* container = feedly.getSinglePostData(item_index(item));
@@ -550,7 +513,7 @@ void CursesProvider::markItemRead(ITEM* item){
                 feedly.markPostsRead(const_cast<std::vector<std::string>*>(temp));
                 numUnread--;
                 numRead++;
-                clear_updateline();
+                update_statusline("", NULL, true);
 
                 update_panels();
         }
@@ -622,27 +585,48 @@ void CursesProvider::print_in_center(WINDOW *win, int starty, int startx, int he
         tempX = (width - length)/ 2;
         tempY = (height / 2);
         x = startx + (int)tempX;
-        y = starty + (int)tempY; 
+        y = starty + (int)tempY;
         wattron(win, color);
         mvwprintw(win, y, x, "%s", str);
         wattroff(win, color);
 }
-void CursesProvider::clear_updateline(){
+void CursesProvider::clear_statusline(){
         move(LINES-2, 0);
         clrtoeol();
 }
-void CursesProvider::update_counter(){
-        std::stringstream sstm;
-        sstm << "[" << numUnread << ":" << numRead << "/" << totalPosts << "]";
-        const char* counter = sstm.str().c_str();
+void CursesProvider::update_statusline(const char* update, const char* post, bool showCounter){
+        if (update != NULL)
+                statusLine[0] = std::string(update);
+        if (post != NULL)
+                statusLine[1] = std::string(post);
+        if (showCounter) {
+                std::stringstream sstm;
+                sstm << "[" << numUnread << ":" << numRead << "/" << totalPosts << "]";
+                statusLine[2] = sstm.str();
+        } else {
+                statusLine[2] = std::string();
+        }
 
-        move(LINES - 2, COLS - strlen(counter));
+        clear_statusline();
+        move(LINES - 2, 0);
         clrtoeol();
+        attron(COLOR_PAIR(1));
+        mvprintw(LINES - 2, 0, statusLine[0].c_str());
+        attroff(COLOR_PAIR(1));
+        mvprintw(LINES - 2, statusLine[0].empty() ? 0 : (statusLine[0].length() + 1), statusLine[1].substr(0,
+                                COLS - statusLine[0].length() - statusLine[2].length() - 2).c_str());
         attron(COLOR_PAIR(3));
-        mvprintw(LINES - 2, COLS - strlen(counter), counter);
+        mvprintw(LINES - 2, COLS - statusLine[2].length(), statusLine[2].c_str());
         attroff(COLOR_PAIR(3));
         refresh();
         update_panels();
+}
+void CursesProvider::update_infoline(const char* info){
+        move(LINES-1, 0);
+        clrtoeol();
+        attron(COLOR_PAIR(5));
+        mvprintw(LINES - 1, 0, info);
+        attroff(COLOR_PAIR(5));
 }
 void CursesProvider::cleanup(){
         if(ctgMenu != NULL){
@@ -654,7 +638,7 @@ void CursesProvider::cleanup(){
 
                 unpost_menu(postsMenu);
                 free_menu(postsMenu);
-        } 
+        }
 
         if(postsItems != NULL){
                 for(unsigned int i = 0; i < ARRAY_SIZE(postsItems); ++i)

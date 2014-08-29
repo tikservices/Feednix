@@ -11,12 +11,13 @@
 #include "FeedlyProvider.h"
 
 #define HOME_PATH getenv("HOME")
+extern std::string TMPDIR;
 
 FeedlyProvider::FeedlyProvider(){
         curl_global_init(CURL_GLOBAL_DEFAULT);
         verboseFlag = false;
 
-        TEMP_PATH = std::string(HOME_PATH) + "/.config/feednix/temp.txt";
+        TEMP_PATH = TMPDIR + "/temp.txt";
 
         Json::Value root;
         Json::Reader reader;
@@ -96,9 +97,9 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
                 exit(EXIT_FAILURE);
                 return NULL;
         }
-        user_data.categories["All"] = "user/" + user_data.id + "/category/global.all"; 
-        user_data.categories["Saved"] = "user/" + user_data.id + "/tag/global.saved"; 
-        user_data.categories["Uncategorized"] = "user/" + user_data.id + "/category/global.uncategorized"; 
+        user_data.categories["All"] = "user/" + user_data.id + "/category/global.all";
+        user_data.categories["Saved"] = "user/" + user_data.id + "/tag/global.saved";
+        user_data.categories["Uncategorized"] = "user/" + user_data.id + "/category/global.uncategorized";
 
         for(unsigned int i = 0; i < root.size(); i++)
                 user_data.categories[(root[i]["label"]).asString()] = root[i]["id"].asString();
@@ -106,7 +107,7 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
         return &(user_data.categories);
 }
 const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& category){
-        feeds.clear(); 
+        feeds.clear();
 
         if(category == "All")
                 curl_retrive("streams/contents?ranked=newest&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["All"]).c_str(), 0)));
@@ -142,7 +143,7 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
         }
 
         for(unsigned int i = 0; i < root["items"].size(); i++)
-                feeds.push_back(PostData{root["items"][i]["summary"]["content"].asString(), root["items"][i]["title"].asString(), root["items"][i]["id"].asString(), root["items"][i]["originId"].asString()});
+                feeds.push_back(PostData{root["items"][i]["summary"]["content"].asString(), root["items"][i]["title"].asString(), root["items"][i]["id"].asString(), root["items"][i]["originId"].asString(), root["items"][i]["origin"]["title"].asString()});
 
         data.close();
         return &(feeds);
@@ -163,7 +164,7 @@ bool FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
         jsonCont["action"] = "markAsRead";
 
         Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont); 
+        std::string document = writer.write(jsonCont);
 
         curl = curl_easy_init();
 
@@ -207,7 +208,7 @@ bool FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
         jsonCont["action"] = "keepUnread";
 
         Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont); 
+        std::string document = writer.write(jsonCont);
 
         curl = curl_easy_init();
 
@@ -251,7 +252,7 @@ bool FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
         jsonCont["action"] = "markAsSaved";
 
         Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont); 
+        std::string document = writer.write(jsonCont);
 
         curl = curl_easy_init();
 
@@ -295,7 +296,7 @@ bool FeedlyProvider::markPostsUnsaved(const std::vector<std::string>* ids){
         jsonCont["action"] = "markAsUnsaved";
 
         Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont); 
+        std::string document = writer.write(jsonCont);
 
         curl = curl_easy_init();
 
@@ -339,7 +340,7 @@ bool FeedlyProvider::markCategoriesRead(const std::string& id, const std::string
         jsonCont["action"] = "markAsRead";
 
         Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont); 
+        std::string document = writer.write(jsonCont);
 
         curl = curl_easy_init();
 
@@ -389,7 +390,7 @@ bool FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, 
                 jsonCont["categories"] = Json::Value(Json::arrayValue);
 
         Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont); 
+        std::string document = writer.write(jsonCont);
 
         curl = curl_easy_init();
 
@@ -424,7 +425,7 @@ PostData* FeedlyProvider::getSinglePostData(const int index){
 }
 
 const std::string FeedlyProvider::getUserId(){
-        return user_data.id; 
+        return user_data.id;
 }
 
 void FeedlyProvider::enableVerbose(){
@@ -466,7 +467,7 @@ void FeedlyProvider::openLogStream(){
                 char* dt = ctime(&current);
 
                 log_stream << "======== " << std::string(dt) << "\n";
-                
+
                 isLogStreamOpen = true;
         }
 }
