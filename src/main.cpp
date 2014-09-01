@@ -9,14 +9,19 @@
 #include "CursesProvider.h"
 
 #define HOME_PATH getenv("HOME")
+CursesProvider *curses;
+std::string TMPDIR;
 
 void atExitFunction(void){
-        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -delete 2> /dev/null").c_str());
+        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -and -not -name \'log.txt\' -delete 2> /dev/null").c_str());
+        system(std::string("rm -R " + TMPDIR + " 2> /dev/null").c_str());
+        curses->cleanup();
 }
 
 void sighandler(int signum){
-        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -delete 2> /dev/null").c_str());
+        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -and -not -name \'log.txt\' -delete 2> /dev/null").c_str());
         signal(signum, SIG_DFL);
+        curses->cleanup();
         kill(getpid(), signum);
 }
 
@@ -25,17 +30,29 @@ void printUsage();
 int main(int argc, char **argv){
         signal(SIGINT, sighandler);
         signal(SIGTERM, sighandler);
+        signal(SIGSEGV, sighandler);
         atexit(atExitFunction);
 
         bool verboseEnabled = false;
         bool changeTokens = false;
-        CursesProvider *curses;
- 
+
         if(fopen(std::string(std::string(HOME_PATH) + "/.config/feednix/config.json").c_str(), "r") == NULL){
-                system(std::string("cp /etc/feednix/config.json " + std::string(HOME_PATH) + "/.config/feednix/config.json").c_str());
+                system(std::string("mkdir -P" + std::string(HOME_PATH) + "/.config/feednix &> /dev/null").c_str());
+                system(std::string("cp /etc/xdg/feednix/config.json " + std::string(HOME_PATH) + "/.config/feednix/config.json").c_str());
                 system(std::string("chmod 600 " + std::string(HOME_PATH) + "/.config/feednix/config.json").c_str());
         }
- 
+
+        char *sys_tmpdir = getenv("TMPDIR");
+        if(!sys_tmpdir)
+                sys_tmpdir = (char *)"/tmp";
+
+        char * pathTemp = (char *)malloc(sizeof(char) * (strlen(sys_tmpdir) + 16));
+        strcpy(pathTemp, sys_tmpdir);
+        strcat(pathTemp, "/feednix.XXXXXX");
+
+        TMPDIR = std::string(mkdtemp(pathTemp));
+        free(pathTemp);
+
         if(argc >= 2){
                 for(int i = 1; i < argc; ++i){
                         if(argv[i][0] == '-' && argv[i][1] == 'h' && strlen(argv[1]) <= 2){

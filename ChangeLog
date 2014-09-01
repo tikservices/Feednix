@@ -1,0 +1,46 @@
+0.8.3
+==========
+* fixed bug causing posts window to not appear if no posts are available
+* implemented log system
+* added command to clean up tmp files
+
+0.8.2
+==========
+* replaced F1 with q as exit key
+* added extra error check to clean up
+* fixed bug causing terminals to break if program exited unexpectedly
+
+0.8.1
+==========
+* fixed bug causing no preview to show on program start
+* misc bug fixes
+
+
+0.8
+==========
+Many thanks to lejenome for the following:
+
+* use $TMPDIR (mkdtemp) for preview.html file to avoid unneeded disk access
+* add a new panel to shown a quick preview for current selected item (html formated by w3m) instead of the need to open w3m for previews
+* add 3 new config options to add some interface tweaks (ctg_win_width: to change ctgWin width, view_win_height: to set viewWin height, view_win_height_per: to set viewWin height percent that can be used instead of the previous option and overwirte it)
+* fix unreading unreaded post when handling "u"
+* fix mark as read aleardy marked as read posts on "O" handling
+
+
+
+0.7.2
+==========
+* added save and unsave options
+* fixed seg fault caused by no posts exisiting (all posts had been read)
+* fixed bug involving pressing enter before anything else causing a seg fault
+* other minor bugs fixes
+
+0.7.1
+==========
+* code refraction
+
+0.7
+==========
+* changed log in method to developer tokens
+* added options to manually change developer tokens
+
