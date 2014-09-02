@@ -67,6 +67,18 @@ Please visit this [page](https://feednix-jarkore.rhcloud.com) for details.
 
 **The follwoing only lists major updates. For everything in between please see the ChangeLog**
 
+###v0.9
+Once again many thanks to [lejenome](https://github.com/lejenome) for the following:
+
+* fix panels array length
+* add travis-ci config file
+* use global TMPDIR var instead of class depend tmpdir var … 
+* move tmpdir creation to FeedluProvider and use it for temp.txt file too
+* make update_statusline char\* params const
+* minimaze updating info bar code into a common function
+* replace tabs with 8 spaces
+* add .gitignore file 
+
 ###v0.8
 
 Many thanks to [lejenome](https://github.com/lejenome) for the following: 
