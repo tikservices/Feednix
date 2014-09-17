@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 #include <iterator>
+#include <algorithm>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
@@ -19,6 +20,8 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define CTRLD   4
+#define POSTS_STATUSLINE "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  = : change sort type s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit"
+#define CTG_STATUSLINE "Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit"
 
 #define HOME_PATH getenv("HOME")
 extern std::string TMPDIR;
@@ -54,9 +57,12 @@ void CursesProvider::init(){
                 init_pair(6, root["colors"]["item_text"].asInt(), root["colors"]["background"].asInt());
                 init_pair(7, root["colors"]["item_highlight"].asInt(), root["colors"]["background"].asInt());
                 init_pair(8, root["colors"]["read_item"].asInt(), root["colors"]["background"].asInt());
+
                 ctgWinWidth = root["ctg_win_width"].asInt();
                 viewWinHeight = root["view_win_height"].asInt();
                 viewWinHeightPer = root["view_win_height_per"].asInt();
+
+                currentRank = root["rank"].asBool();
         }
         else{
                 endwin();
@@ -84,7 +90,7 @@ void CursesProvider::init(){
         set_panel_userptr(panels[0], panels[1]);
         set_panel_userptr(panels[1], panels[0]);
 
-        update_infoline("Enter: See Preview  A: mark all read  u: mark unread  r: mark read  s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
+        update_infoline(POSTS_STATUSLINE);
 
         top = panels[1];
         top_panel(top);
@@ -126,7 +132,7 @@ void CursesProvider::control(){
                                         }
                                         else{
                                                 curMenu = postsMenu;
-                                                update_infoline("Enter: See Preview A: mark all read u: mark unread r: mark read R: refresh o: Open in plain-text O: Open in Browser F1: exit");
+                                                update_infoline(POSTS_STATUSLINE);
                                         }
                                 }
                                 else if(panel_window(top) == postsWin)
@@ -139,7 +145,7 @@ void CursesProvider::control(){
                                         win_show(postsWin, strdup("Posts"), 1, true);
                                         win_show(ctgWin, strdup("Categories"), 2, false);
 
-                                        update_infoline("Enter: See Preview  A: mark all read  u: mark unread  r: mark read  R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit");
+                                        update_infoline(POSTS_STATUSLINE);
                                         refresh();
                                 }
                                 else{
@@ -147,13 +153,22 @@ void CursesProvider::control(){
                                         win_show(ctgWin, strdup("Categories"), 1, true);
                                         win_show(postsWin, strdup("Posts"), 2, false);
 
-                                        update_infoline("Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit");
+                                        update_infoline(CTG_STATUSLINE);
 
                                         refresh();
                                 }
 
                                 top = (PANEL *)panel_userptr(top);
                                 top_panel(top);
+                                break;
+                        case '=':
+                                wclear(viewWin);
+                                update_statusline("[Updating stream]", "", false);
+                                refresh();
+
+                                currentRank = !currentRank;
+
+                                ctgMenuCallback(strdup(item_name(current_item(ctgMenu))));
                                 break;
                         case KEY_DOWN:
                                 changeSelectedItem(curMenu, REQ_DOWN_ITEM);
@@ -341,7 +356,7 @@ void CursesProvider::createPostsMenu(){
         int height, width;
         int n_choices, i = 0;
 
-        const std::vector<PostData> *posts = feedly.giveStreamPosts("All");
+        const std::vector<PostData> *posts = feedly.giveStreamPosts("All", currentRank);
 
         if(posts != NULL && posts->size() > 0){
                 totalPosts = posts->size();
@@ -394,7 +409,7 @@ void CursesProvider::ctgMenuCallback(char* label){
         getbegyx(postsWin, starty, startx);
 
         int n_choices, i = 0;
-        const std::vector<PostData>* posts = feedly.giveStreamPosts(label);
+        const std::vector<PostData>* posts = feedly.giveStreamPosts(label, currentRank);
         if(posts == NULL){
                 totalPosts = 0;
                 numRead = 0;

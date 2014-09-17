@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <jsoncpp/json/json.h>
@@ -43,7 +44,6 @@ void FeedlyProvider::authenticateUser(){
                 log_stream << reader.getFormatedErrorMessages() << std::endl;
                 exit(EXIT_FAILURE);
         }
-
         if(root["developer_token"] == Json::nullValue || changeTokens){
                 std::cout << "You will now be redirected to Feedly's Developer Log In page..." << std::endl;
                 std::cout << "Please sign in, copy your user id and retrive the token from your email and copy it onto here.\n" << std::endl;
@@ -62,18 +62,18 @@ void FeedlyProvider::authenticateUser(){
 
                 root["developer_token"] = devToken;
                 root["userID"] = userID;
+
+                Json::StyledWriter writer;
+
+                std::ofstream newConfig(configPath.c_str());
+                newConfig << root;
+
+                newConfig.close();
         }
         initialConfig.close();
 
         user_data.authToken = (root["developer_token"]).asString();
         user_data.id = (root["userID"]).asString(); 
-
-        Json::StyledWriter writer;
-
-        std::ofstream newConfig(configPath.c_str());
-        newConfig << root;
-
-        newConfig.close();
 }
 const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
         curl_retrive("categories");
@@ -106,15 +106,20 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
 
         return &(user_data.categories);
 }
-const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& category){
+const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& category, bool whichRank){
         feeds.clear();
 
+        std::string rank = "newest";
+        if(whichRank)
+                rank = "oldest";
+
+
         if(category == "All")
-                curl_retrive("streams/contents?ranked=newest&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["All"]).c_str(), 0)));
+                curl_retrive("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["All"]).c_str(), 0)));
         else if(category == "Uncategorized")
-                curl_retrive("streams/contents?ranked=newest&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Uncategorized"]).c_str(), 0)));
+                curl_retrive("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Uncategorized"]).c_str(), 0)));
         else if(category == "Saved")
-                curl_retrive("streams/contents?ranked=newest&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Saved"]).c_str(), 0)));
+                curl_retrive("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Saved"]).c_str(), 0)));
         else
                 curl_retrive("streams/" + std::string(curl_easy_escape(curl, user_data.categories[category].c_str(), 0)) + "/contents?unreadOnly=true&ranked=newest&count=" + rtrv_count);
 
@@ -142,8 +147,9 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
                 return NULL;
         }
 
-        for(unsigned int i = 0; i < root["items"].size(); i++)
+        for(unsigned int i = 0; i < root["items"].size(); i++){
                 feeds.push_back(PostData{root["items"][i]["summary"]["content"].asString(), root["items"][i]["title"].asString(), root["items"][i]["id"].asString(), root["items"][i]["originId"].asString(), root["items"][i]["origin"]["title"].asString()});
+        }
 
         data.close();
         return &(feeds);

@@ -38,7 +38,7 @@ class FeedlyProvider{
                 bool markCategoriesRead(const std::string& id, const std::string& lastReadEntryId);
                 bool markPostsUnread(const std::vector<std::string>* ids);
                 bool addSubscription(bool newCategory, const std::string& feed, std::vector<std::string> categories, const std::string& title = "");
-                const std::vector<PostData>* giveStreamPosts(const std::string& category);
+                const std::vector<PostData>* giveStreamPosts(const std::string& category, bool whichRank = 0);
                 const std::map<std::string, std::string>* getLabels();
                 const std::string getUserId();
                 PostData* getSinglePostData(const int index);

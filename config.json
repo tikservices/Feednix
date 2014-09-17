@@ -23,8 +23,12 @@
                 "read_item" : 3
         },
 	"ctg_win_width" : 40,
-//	"view_win_height" : 200,
+        //"view_win_height" : 200,
 	"view_win_height_per" : 50,
-          // Count of posts to be retrived per request. Maximum is 10000
-        "posts_retrive_count" : "500"
+        // Count of posts to be retrived per request. Maximum is 10000
+        "posts_retrive_count" : "500",
+        //Feedly API Allows for two sort types:
+                // Newest(default) false 
+                // Oldest true 
+        "rank" : false 
 }

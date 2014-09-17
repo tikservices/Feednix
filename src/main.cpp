@@ -58,7 +58,6 @@ int main(int argc, char **argv){
                         if(argv[i][0] == '-' && argv[i][1] == 'h' && strlen(argv[1]) <= 2){
                                 printUsage();
                                 exit(EXIT_SUCCESS);
-
                         }
                         else{
                                 if(argv[i][0] == '-' && argv[i][1] == 'v' && strlen(argv[1]) <= 2)
