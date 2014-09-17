@@ -1,3 +1,9 @@
+0.9.1
+==========
+* added ability to sort posts by newest or oldests
+* made status line strings into macros to improve code readability
+* fixed bug that caused config values to be reset
+
 0.9
 ==========
 Once again many thanks to lejenome for the following:

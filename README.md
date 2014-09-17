@@ -53,6 +53,7 @@ to keep this project open source, hence this new method.
 * u : Mark post unread
 * A : mark all posts read
 * R : Refresh category
+* = : Change sort type
 
 ### Category List Options
 
