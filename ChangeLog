@@ -1,3 +1,8 @@
+0.9.2
+==========
+* added unicode supprot (I think)
+* fixed issue with some characters not loading properly
+
 0.9.1
 ==========
 * added ability to sort posts by newest or oldests
