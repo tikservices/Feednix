@@ -31,6 +31,7 @@ CursesProvider::CursesProvider(bool verbose, bool change){
         feedly.setChangeTokensFlag(change);
         feedly.authenticateUser();
 
+        setlocale(LC_ALL, "");
         initscr();
 
         start_color();
