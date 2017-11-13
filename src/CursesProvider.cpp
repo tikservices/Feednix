@@ -123,7 +123,7 @@ void CursesProvider::control(){
                                 if(curMenu == ctgMenu){
                                         top = (PANEL *)panel_userptr(top);
 
-                                        update_statusline("[Updateing stream]", "", false);
+                                        update_statusline("[Updating stream]", "", false);
 
                                         refresh();
                                         update_panels();
