@@ -1,6 +1,6 @@
 Feednix
 =======
-[![Build Status](https://travis-ci.org/Jarkore/Feednix.svg?branch=v0.9)](https://travis-ci.org/Jarkore/Feednix)
+[![Build Status](https://travis-ci.org/anders-dc/Feednix.svg)](https://travis-ci.org/anders-dc/Feednix)
 
 An ncurses based client for [Feedly](http://feedly.com/).
 
