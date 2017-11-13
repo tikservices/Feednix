@@ -48,8 +48,11 @@ void FeedlyProvider::authenticateUser(){
                 std::cout << "You will now be redirected to Feedly's Developer Log In page..." << std::endl;
                 std::cout << "Please sign in, copy your user id and retrive the token from your email and copy it onto here.\n" << std::endl;
 
-                system(std::string("xdg-open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
+#ifdef __APPLE__
                 system(std::string("open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
+#else
+                system(std::string("xdg-open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
+#endif
 
                 sleep(3);
 

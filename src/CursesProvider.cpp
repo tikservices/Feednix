@@ -250,7 +250,11 @@ void CursesProvider::control(){
 
                                          PostData* data = feedly.getSinglePostData(item_index(curItem));
 
+#ifdef __APPLE__
+                                         system(std::string("open \"" + data->originURL + "\" > /dev/null &").c_str());
+#else
                                          system(std::string("xdg-open \"" + data->originURL + "\" > /dev/null &").c_str());
+#endif
                                          markItemRead(curItem);
 
                                          break;
