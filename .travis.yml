@@ -1,12 +1,23 @@
 language: cpp
+
 compiler: clang
+
+os:
+    - linux
+    - osx
+
+sudo: true
+
 before_install:
-            - sudo apt-get update -qq
+    - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get update -qq; fi
+
 install:
-            - sudo apt-get install -qq dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev
-            - wget http://mirrors.kernel.org/ubuntu/pool/main/a/autoconf/autoconf_2.69-6_all.deb
-            - sudo dpkg -i autoconf_2.69-6_all.deb
+    - if [ $TRAVIS_OS_NAME = linux ]; then \
+      sudo apt-get install -qq dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev; \
+      else brew install jsoncpp; fi
+
 before_script:
-            - ./autogen.sh
+    - ./autogen.sh
+
 script:
-            - ./configure && make
+    - ./configure && make
