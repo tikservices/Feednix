@@ -14,7 +14,11 @@
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
+#ifdef __APPLE__
 #include <json/json.h>
+#else
+#include <jsoncpp/json/json.h>
+#endif
 
 #include "CursesProvider.h"
 
