@@ -6,8 +6,6 @@ os:
     - linux
     - osx
 
-sudo: required
-
 notifications:
     email:
         recipients:
