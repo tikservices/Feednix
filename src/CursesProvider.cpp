@@ -14,7 +14,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 
 #include "CursesProvider.h"
 

@@ -22,6 +22,14 @@ Thank you @chrisjohnston for mentioning the following dependencies for Ubuntu:
 
 `sudo apt-get install dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev`
 
+For macOS with [Homebrew](https://brew.sh), install the prerequisites with:
+
+`brew install jsoncpp`
+
+Install to `/usr/local/bin` with the following:
+
+`./configure --prefix=/usr/local && make && make install`
+
 ## Clarification on Sign In Method (PLEASE READ)
 
 Due to the fact that this is open source, the administrators at Feedly have
