@@ -6,7 +6,14 @@ os:
     - linux
     - osx
 
-sudo: true
+sudo: required
+
+notifications:
+    email:
+        recipients:
+            - andersd@riseup.net
+        on_success: never
+        on_failure: always
 
 before_install:
     - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get update -qq; fi
