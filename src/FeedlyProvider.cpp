@@ -1,8 +1,15 @@
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef __APPLE__
+#include <json/json.h>
+#include <json/writer.h>
+#else
 #include <jsoncpp/json/json.h>
 #include <jsoncpp/json/writer.h>
+#endif
+
 #include <iterator>
 #include <istream>
 #include <termios.h>
@@ -48,7 +55,11 @@ void FeedlyProvider::authenticateUser(){
                 std::cout << "You will now be redirected to Feedly's Developer Log In page..." << std::endl;
                 std::cout << "Please sign in, copy your user id and retrive the token from your email and copy it onto here.\n" << std::endl;
 
+#ifdef __APPLE__
+                system(std::string("open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
+#else
                 system(std::string("xdg-open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
+#endif
 
                 sleep(3);
 
@@ -86,7 +97,7 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
         std::ifstream data(TEMP_PATH.c_str(), std::ifstream::binary);
         parsingSuccesful = reader.parse(data, root);
 
-        if(data == NULL || curl_res != CURLE_OK || !parsingSuccesful){
+        if(!data || curl_res != CURLE_OK || !parsingSuccesful){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "ERROR: Failed to Retrive Categories" << std::endl;
                 if(!parsingSuccesful)
@@ -132,7 +143,7 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
         parsingSuccesful = reader.parse(data, root);
 
 
-        if(data == NULL || curl_res != CURLE_OK || !parsingSuccesful){
+        if(!data || curl_res != CURLE_OK || !parsingSuccesful){
                 if(!isLogStreamOpen) openLogStream();
                 if(!parsingSuccesful)
                         log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;

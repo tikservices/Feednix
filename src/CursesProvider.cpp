@@ -14,7 +14,11 @@
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
+#ifdef __APPLE__
+#include <json/json.h>
+#else
 #include <jsoncpp/json/json.h>
+#endif
 
 #include "CursesProvider.h"
 
@@ -119,7 +123,7 @@ void CursesProvider::control(){
                                 if(curMenu == ctgMenu){
                                         top = (PANEL *)panel_userptr(top);
 
-                                        update_statusline("[Updateing stream]", "", false);
+                                        update_statusline("[Updating stream]", "", false);
 
                                         refresh();
                                         update_panels();
@@ -250,7 +254,11 @@ void CursesProvider::control(){
 
                                          PostData* data = feedly.getSinglePostData(item_index(curItem));
 
+#ifdef __APPLE__
+                                         system(std::string("open \"" + data->originURL + "\" > /dev/null &").c_str());
+#else
                                          system(std::string("xdg-open \"" + data->originURL + "\" > /dev/null &").c_str());
+#endif
                                          markItemRead(curItem);
 
                                          break;
