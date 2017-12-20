@@ -73,11 +73,11 @@ to keep this project open source, hence this new method.
 
 Please visit this [page](https://feednix-jarkore.rhcloud.com) for details.
 
-##Changelog
+## Changelog
 
 **The follwoing only lists major updates. For everything in between please see the ChangeLog**
 
-###v0.9
+### v0.9
 Once again many thanks to [lejenome](https://github.com/lejenome) for the following:
 
 * fix panels array length
@@ -89,7 +89,7 @@ Once again many thanks to [lejenome](https://github.com/lejenome) for the follow
 * replace tabs with 8 spaces
 * add .gitignore file 
 
-###v0.8
+### v0.8
 
 Many thanks to [lejenome](https://github.com/lejenome) for the following: 
 
