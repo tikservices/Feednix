@@ -43,7 +43,7 @@ to keep this project open source, hence this new method.
 
 **I have modified Feednix to help you with this. IT CANNOT DO THIS**
 **AUTOMATICALLY since developer tokens involve sending you an email**
-**to retrive them.**
+**to retrieve them.**
 
 ## Usage
 
