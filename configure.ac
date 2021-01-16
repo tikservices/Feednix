@@ -10,9 +10,9 @@ AC_PROG_CC
 
 AC_CHECK_LIB([curl], [curl_easy_init])
 AC_CHECK_LIB([jsoncpp], [_ZNK4Json5Value4sizeEv])
-AC_CHECK_LIB([menu], [free_item])
-AC_CHECK_LIB([ncurses], [initscr])
-AC_CHECK_LIB([panel], [new_panel])
+AC_CHECK_LIB([menuw], [free_item])
+AC_CHECK_LIB([ncursesw], [initscr])
+AC_CHECK_LIB([panelw], [new_panel])
 
 AC_CHECK_HEADERS([stdlib.h string.h termios.h unistd.h])
 
