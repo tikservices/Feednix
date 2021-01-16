@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iostream>
 #include <string.h>
 #include <signal.h>
@@ -7,6 +8,8 @@
 #include <stdio.h>
 
 #include "CursesProvider.h"
+
+namespace fs = std::filesystem;
 
 #define HOME_PATH getenv("HOME")
 CursesProvider *curses;
@@ -36,10 +39,14 @@ int main(int argc, char **argv){
         bool verboseEnabled = false;
         bool changeTokens = false;
 
-        if(fopen(std::string(std::string(HOME_PATH) + "/.config/feednix/config.json").c_str(), "r") == NULL){
-                system(std::string("mkdir -P" + std::string(HOME_PATH) + "/.config/feednix &> /dev/null").c_str());
-                system(std::string("cp /etc/xdg/feednix/config.json " + std::string(HOME_PATH) + "/.config/feednix/config.json").c_str());
-                system(std::string("chmod 600 " + std::string(HOME_PATH) + "/.config/feednix/config.json").c_str());
+        // Create ~/.config/feednix/config.json if it doesn't exist.
+        const auto home_path = fs::path{HOME_PATH};
+        const auto config_dir = home_path / ".config" / "feednix";
+        const auto config_path = config_dir / "config.json";
+        fs::create_directories(config_dir);
+        if(!fs::exists(fs::status(config_path))){
+                fs::copy_file("/etc/xdg/feednix/config.json", config_path);
+                fs::permissions(config_path, fs::perms::owner_read | fs::perms::owner_write);
         }
 
         char *sys_tmpdir = getenv("TMPDIR");
