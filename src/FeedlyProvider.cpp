@@ -58,7 +58,17 @@ void FeedlyProvider::authenticateUser(){
 #ifdef __APPLE__
                 system(std::string("open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
 #else
-                system(std::string("xdg-open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
+                if(getenv("XDG_DATA_DIRS") != NULL){
+                        const auto xdgOpenExitCode = system("xdg-open \"https://feedly.com/v3/auth/dev\" &> /dev/null &");
+                        if(xdgOpenExitCode != 0){
+                                std::cout << "Feednix failed to launch the browser with an exit code " << std::to_string(xdgOpenExitCode) << "." << std::endl;
+                                std::cout << "Please open \"https://feedly.com/v3/auth/dev\" with your favorite browser by yourself." << std::endl << std::endl;
+                        }
+                }
+                else{
+                        std::cout << "Feednix cannot launch the browser in a non-desktop session." << std::endl;
+                        std::cout << "Please open \"https://feedly.com/v3/auth/dev\" with your favorite browser by yourself." << std::endl << std::endl;
+                }
 #endif
 
                 sleep(3);
