@@ -48,7 +48,7 @@ void FeedlyProvider::authenticateUser(){
         if(!parsingSuccesful){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "ERROR: Log In Failed - Unable to read from config file" << std::endl;
-                log_stream << reader.getFormatedErrorMessages() << std::endl;
+                log_stream << reader.getFormattedErrorMessages() << std::endl;
                 exit(EXIT_FAILURE);
         }
         if(root["developer_token"] == Json::nullValue || changeTokens){
@@ -101,7 +101,7 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "ERROR: Failed to Retrive Categories" << std::endl;
                 if(!parsingSuccesful)
-                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;
+                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormattedErrorMessages() << std::endl;
                 if(curl_res != CURLE_OK)
                         log_stream << "curl_easy_perform() failed : " << curl_easy_strerror(curl_res) << std::endl;
 
@@ -146,7 +146,7 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
         if(!data || curl_res != CURLE_OK || !parsingSuccesful){
                 if(!isLogStreamOpen) openLogStream();
                 if(!parsingSuccesful)
-                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormatedErrorMessages() << std::endl;
+                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormattedErrorMessages() << std::endl;
                 if(curl_res != CURLE_OK)
                         log_stream << "curl_easy_perform() failed : " << curl_easy_strerror(curl_res) << std::endl;
 
