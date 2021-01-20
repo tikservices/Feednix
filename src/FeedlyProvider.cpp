@@ -53,21 +53,23 @@ void FeedlyProvider::authenticateUser(){
         }
         if(root["developer_token"] == Json::nullValue || changeTokens){
                 std::cout << "You will now be redirected to Feedly's Developer Log In page..." << std::endl;
-                std::cout << "Please sign in, copy your user id and retrive the token from your email and copy it onto here.\n" << std::endl;
+                std::cout << "Please sign in, copy your user id and retrive the token from your email and copy it onto here." << std::endl;
 
 #ifdef __APPLE__
                 system(std::string("open \"https://feedly.com/v3/auth/dev\" &> /dev/null &").c_str());
 #else
-                if(getenv("XDG_DATA_DIRS") != NULL){
-                        const auto xdgOpenExitCode = system("xdg-open \"https://feedly.com/v3/auth/dev\" &> /dev/null &");
-                        if(xdgOpenExitCode != 0){
-                                std::cout << "Feednix failed to launch the browser with an exit code " << std::to_string(xdgOpenExitCode) << "." << std::endl;
-                                std::cout << "Please open \"https://feedly.com/v3/auth/dev\" with your favorite browser by yourself." << std::endl << std::endl;
-                        }
+                const auto xdgOpenExitCode = system("xdg-open \"https://feedly.com/v3/auth/dev\" > /dev/null");
+                if(xdgOpenExitCode == 0){
+                        // xdg-open succeeded, but the browser might have failed to launch or show the page.
+                        // For example, xdg-open may launch www-browser (w3m) in a non-desktop session,
+                        // but the browser will terminate immediately because the output is redirected.
+                        // Ask the user to open the authentication page manually as a fallback method.
+                        std::cout << "If the browser doesn't launch, please open ";
+                        std::cout << "\"https://feedly.com/v3/auth/dev\" by yourself." << std::endl << std::endl;
                 }
                 else{
-                        std::cout << "Feednix cannot launch the browser in a non-desktop session." << std::endl;
-                        std::cout << "Please open \"https://feedly.com/v3/auth/dev\" with your favorite browser by yourself." << std::endl << std::endl;
+                        std::cerr << "Feednix failed to launch the browser with an exit code " << std::to_string(xdgOpenExitCode) << "." << std::endl;
+                        std::cerr << "Please open \"https://feedly.com/v3/auth/dev\" by yourself." << std::endl << std::endl;
                 }
 #endif
 
