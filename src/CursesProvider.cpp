@@ -68,6 +68,7 @@ void CursesProvider::init(){
                 viewWinHeightPer = root["view_win_height_per"].asInt();
 
                 currentRank = root["rank"].asBool();
+                secondsToMarkAsRead = std::chrono::seconds(root["seconds_to_mark_as_read"].asInt());
         }
         else{
                 endwin();
@@ -204,6 +205,9 @@ void CursesProvider::control(){
                                                  update_statusline("", NULL, true);
                                          }
 
+                                         // Prevent an article marked as unread explicitly
+                                         // from being marked as read automatically.
+                                         lastPostSelectionTime = std::chrono::time_point<std::chrono::steady_clock>::max();
 
                                          break;
                                  }
@@ -321,6 +325,8 @@ void CursesProvider::control(){
                 update_panels();
                 doupdate();
         }
+
+        markCurrentItemReadAutomatically();
 }
 void CursesProvider::createCategoriesMenu(){
         int n_choices, i = 3;
@@ -466,6 +472,10 @@ void CursesProvider::ctgMenuCallback(char* label){
         changeSelectedItem(postsMenu, REQ_UP_ITEM);
 }
 void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
+        if(curMenu == postsMenu){
+            markCurrentItemReadAutomatically();
+        }
+
         menu_driver(curMenu, req);
         ITEM* curItem = current_item(curMenu);
 
@@ -495,7 +505,6 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         mvwprintw(viewWin, 1, 1, "%s", content.c_str());
         update_statusline(NULL, std::string(data->originTitle + " - " + data->title).c_str(), true);
         update_panels();
-        markItemRead(curItem);
 }
 void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
         PostData* container = feedly.getSinglePostData(item_index(item));
@@ -541,6 +550,19 @@ void CursesProvider::markItemRead(ITEM* item){
 
                 update_panels();
         }
+}
+// Mark the current article as read if it has been shown for more than a certain period of time.
+void CursesProvider::markCurrentItemReadAutomatically(){
+        const auto now = std::chrono::steady_clock::now();
+        if(ITEM* curItem = current_item(postsMenu)){
+                if ((now > lastPostSelectionTime) &&
+                    (secondsToMarkAsRead >= std::chrono::seconds::zero()) &&
+                    ((now - lastPostSelectionTime) > secondsToMarkAsRead)){
+                        markItemRead(curItem);
+                }
+        }
+
+        lastPostSelectionTime = now;
 }
 void CursesProvider::win_show(WINDOW *win, char *label, int label_color, bool highlight){
         int startx, starty, height, width;
