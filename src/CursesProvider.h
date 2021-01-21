@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <curses.h>
 #include <menu.h>
@@ -24,6 +25,8 @@ class CursesProvider{
                 ITEM **ctgItems, **postsItems;
                 MENU *ctgMenu, *postsMenu;
                 std::string lastEntryRead, statusLine[3];
+                std::chrono::time_point<std::chrono::steady_clock> lastPostSelectionTime{std::chrono::time_point<std::chrono::steady_clock>::max()};
+                std::chrono::seconds secondsToMarkAsRead;
                 bool currentRank = 0;
                 int totalPosts = 0, numRead = 0, numUnread = 0;
                 int viewWinHeightPer = VIEW_WIN_HEIGHT_PER, viewWinHeight = 0, ctgWinWidth = CTG_WIN_WIDTH;
@@ -34,6 +37,7 @@ class CursesProvider{
                 void ctgMenuCallback(char* label);
                 void postsMenuCallback(ITEM* item, bool preview);
                 void markItemRead(ITEM* item);
+                void markCurrentItemReadAutomatically();
                 void win_show(WINDOW *win, char *label, int label_color, bool highlight);
                 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
                 void print_in_center(WINDOW *win, int starty, int startx, int height, int width, char *string, chtype color);
