@@ -1,4 +1,9 @@
 #include <curl/curl.h>
+#ifdef __APPLE__
+#include <json/json.h>
+#else
+#include <jsoncpp/json/json.h>
+#endif
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -32,12 +37,12 @@ class FeedlyProvider{
         public:
                 FeedlyProvider();
                 void authenticateUser();
-                bool markPostsRead(const std::vector<std::string>* ids);
-                bool markPostsSaved(const std::vector<std::string>* ids);
-                bool markPostsUnsaved(const std::vector<std::string>* ids);
-                bool markCategoriesRead(const std::string& id, const std::string& lastReadEntryId);
-                bool markPostsUnread(const std::vector<std::string>* ids);
-                bool addSubscription(bool newCategory, const std::string& feed, std::vector<std::string> categories, const std::string& title = "");
+                void markPostsRead(const std::vector<std::string>* ids);
+                void markPostsSaved(const std::vector<std::string>* ids);
+                void markPostsUnsaved(const std::vector<std::string>* ids);
+                void markCategoriesRead(const std::string& id, const std::string& lastReadEntryId);
+                void markPostsUnread(const std::vector<std::string>* ids);
+                void addSubscription(bool newCategory, const std::string& feed, std::vector<std::string> categories, const std::string& title = "");
                 const std::vector<PostData>* giveStreamPosts(const std::string& category, bool whichRank = 0);
                 const std::map<std::string, std::string>* getLabels();
                 const std::string getUserId();
@@ -57,7 +62,7 @@ class FeedlyProvider{
                 std::vector<PostData> feeds;
                 void getCookies();
                 void enableVerbose();
-                void curl_retrive(const std::string&);
+                Json::Value curl_retrieve(const std::string& uri, const Json::Value& jsonCont = Json::Value::nullSingleton());
                 void extract_galx_value();
                 void echo(bool on);
                 void openLogStream();

@@ -141,8 +141,10 @@ void CursesProvider::control(){
                                                 update_infoline(POSTS_STATUSLINE);
                                         }
                                 }
-                                else if(panel_window(top) == postsWin)
+                                else if((panel_window(top) == postsWin) && (curItem != NULL)){
                                         postsMenuCallback(curItem, true);
+                                }
+
                                 break;
                         case 9:
                                 if(curMenu == ctgMenu){
@@ -189,55 +191,75 @@ void CursesProvider::control(){
                                 changeSelectedItem(curMenu, REQ_UP_ITEM);
                                 break;
                         case 'u':{
-                                         if (!item_opts(curItem)) {
-                                                 std::vector<std::string> *temp = new std::vector<std::string>;
-                                                 temp->push_back(item_description(curItem));
+                                        if (!item_opts(curItem)) {
+                                                std::vector<std::string> *temp = new std::vector<std::string>;
+                                                temp->push_back(item_description(curItem));
 
-                                                 update_statusline("[Marking post unread]", NULL, true);
-                                                 refresh();
+                                                update_statusline("[Marking post unread]", NULL, true);
+                                                refresh();
 
-                                                 feedly.markPostsUnread(temp);
+                                                std::string errorMessage;
+                                                try{
+                                                        feedly.markPostsUnread(temp);
 
-                                                 item_opts_on(curItem, O_SELECTABLE);
-                                                 numRead--;
-                                                 numUnread++;
+                                                        item_opts_on(curItem, O_SELECTABLE);
+                                                        numRead--;
+                                                        numUnread++;
+                                                }
+                                                catch(const std::exception& e){
+                                                        errorMessage = e.what();
+                                                }
 
-                                                 update_statusline("", NULL, true);
-                                         }
+                                                update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
 
-                                         // Prevent an article marked as unread explicitly
-                                         // from being marked as read automatically.
-                                         lastPostSelectionTime = std::chrono::time_point<std::chrono::steady_clock>::max();
+                                                // Prevent an article marked as unread explicitly
+                                                // from being marked as read automatically.
+                                                lastPostSelectionTime = std::chrono::time_point<std::chrono::steady_clock>::max();
+                                        }
 
-                                         break;
+                                        break;
                                  }
                         case 'r':{
-                                         markItemRead(curItem);
-                                         break;
+                                        markItemRead(curItem);
+                                        break;
                                  }
                         case 's':{
-                                         std::vector<std::string> *temp = new std::vector<std::string>;
-                                         temp->push_back(item_description(curItem));
+                                        std::vector<std::string> *temp = new std::vector<std::string>;
+                                        temp->push_back(item_description(curItem));
 
-                                         update_statusline("[Marking post saved]", NULL, true);
-                                         refresh();
+                                        update_statusline("[Marking post saved]", NULL, true);
+                                        refresh();
 
-                                         feedly.markPostsSaved(temp);
-                                         update_statusline("", NULL, true);
+                                        std::string errorMessage;
+                                        try{
+                                                feedly.markPostsSaved(temp);
+                                        }
+                                        catch(const std::exception& e){
+                                                errorMessage = e.what();
+                                        }
 
-                                         break;
+                                        update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
+
+                                        break;
                                  }
                         case 'S':{
-                                         std::vector<std::string> *temp = new std::vector<std::string>;
-                                         temp->push_back(item_description(curItem));
+                                        std::vector<std::string> *temp = new std::vector<std::string>;
+                                        temp->push_back(item_description(curItem));
 
-                                         update_statusline("[Marking post Unsaved]", NULL, true);
-                                         refresh();
+                                        update_statusline("[Marking post Unsaved]", NULL, true);
+                                        refresh();
 
-                                         feedly.markPostsUnsaved(temp);
-                                         update_statusline("", NULL, true);
+                                        std::string errorMessage;
+                                        try{
+                                                feedly.markPostsUnsaved(temp);
+                                        }
+                                        catch(const std::exception& e){
+                                                errorMessage = e.what();
+                                        }
 
-                                         break;
+                                        update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
+
+                                        break;
                                  }
                         case 'R':
                                  wclear(viewWin);
@@ -250,77 +272,93 @@ void CursesProvider::control(){
                                  postsMenuCallback(curItem, false);
                                  break;
                         case 'O':{
-                                         termios oldt;
-                                         tcgetattr(STDIN_FILENO, &oldt);
-                                         termios newt = oldt;
-                                         newt.c_lflag &= ~ECHO;
-                                         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+                                        termios oldt;
+                                        tcgetattr(STDIN_FILENO, &oldt);
+                                        termios newt = oldt;
+                                        newt.c_lflag &= ~ECHO;
+                                        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-                                         PostData* data = feedly.getSinglePostData(item_index(curItem));
-
+                                        try{
+                                                PostData* data = feedly.getSinglePostData(item_index(curItem));
 #ifdef __APPLE__
-                                         system(std::string("open \"" + data->originURL + "\" > /dev/null &").c_str());
+                                                system(std::string("open \"" + data->originURL + "\" > /dev/null &").c_str());
 #else
-                                         system(std::string("xdg-open \"" + data->originURL + "\" > /dev/null &").c_str());
+                                                system(std::string("xdg-open \"" + data->originURL + "\" > /dev/null &").c_str());
 #endif
-                                         markItemRead(curItem);
+                                                markItemRead(curItem);
+                                        }
+                                        catch(const std::exception& e){
+                                                update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
+                                        }
 
-                                         break;
-                                 }
+                                        break;
+                                }
                         case 'a':{
-                                         char feed[200];
-                                         char title[200];
-                                         char ctg[200];
-                                         echo();
+                                        char feed[200];
+                                        char title[200];
+                                        char ctg[200];
+                                        echo();
 
-                                         clear_statusline();
-                                         attron(COLOR_PAIR(4));
-                                         mvprintw(LINES - 2, 0, "[ENTER FEED]:");
-                                         mvgetnstr(LINES-2, strlen("[ENTER FEED]") + 1, feed, 200);
-                                         mvaddch(LINES-2, 0, ':');
+                                        clear_statusline();
+                                        attron(COLOR_PAIR(4));
+                                        mvprintw(LINES - 2, 0, "[ENTER FEED]:");
+                                        mvgetnstr(LINES-2, strlen("[ENTER FEED]") + 1, feed, 200);
+                                        mvaddch(LINES-2, 0, ':');
 
-                                         clrtoeol();
+                                        clrtoeol();
 
-                                         mvprintw(LINES - 2, 0, "[ENTER TITLE]:");
-                                         mvgetnstr(LINES-2, strlen("[ENTER TITLE]") + 1, title, 200);
-                                         mvaddch(LINES-2, 0, ':');
+                                        mvprintw(LINES - 2, 0, "[ENTER TITLE]:");
+                                        mvgetnstr(LINES-2, strlen("[ENTER TITLE]") + 1, title, 200);
+                                        mvaddch(LINES-2, 0, ':');
 
-                                         clrtoeol();
+                                        clrtoeol();
 
-                                         mvprintw(LINES - 2, 0, "[ENTER CATEGORY]:");
-                                         mvgetnstr(LINES-2, strlen("[ENTER CATEGORY]") + 1, ctg, 200);
-                                         mvaddch(LINES-2, 0, ':');
+                                        mvprintw(LINES - 2, 0, "[ENTER CATEGORY]:");
+                                        mvgetnstr(LINES-2, strlen("[ENTER CATEGORY]") + 1, ctg, 200);
+                                        mvaddch(LINES-2, 0, ':');
 
-                                         std::istringstream ss(ctg);
-                                         std::istream_iterator<std::string> begin(ss), end;
+                                        std::istringstream ss(ctg);
+                                        std::istream_iterator<std::string> begin(ss), end;
 
-                                         std::vector<std::string> arrayTokens(begin, end);
+                                        std::vector<std::string> arrayTokens(begin, end);
 
-                                         noecho();
-                                         clrtoeol();
+                                        noecho();
+                                        clrtoeol();
 
-                                         update_statusline("[Adding subscription]", NULL, true);
-                                         refresh();
+                                        update_statusline("[Adding subscription]", NULL, true);
+                                        refresh();
 
-                                         if(strlen(feed) != 0)
-                                                 feedly.addSubscription(false, feed, arrayTokens, title);
+                                        std::string errorMessage;
+                                        if(strlen(feed) != 0){
+                                                try{
+                                                        feedly.addSubscription(false, feed, arrayTokens, title);
+                                                }
+                                                catch(const std::exception& e){
+                                                        errorMessage = e.what();
+                                                }
+                                        }
 
-                                         update_statusline("", NULL, true);
-                                         break;
-                                 }
+                                        update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
+                                        break;
+                                }
                         case 'A':{
-                                         wclear(viewWin);
-                                         update_statusline("[Marking category read]", "", true);
-                                         refresh();
+                                        wclear(viewWin);
+                                        update_statusline("[Marking category read]", "", true);
+                                        refresh();
 
-                                         feedly.markCategoriesRead(item_description(current_item(ctgMenu)), lastEntryRead);
-                                         update_statusline("", NULL, true);
+                                        std::string errorMessage;
+                                        try{
+                                                feedly.markCategoriesRead(item_description(current_item(ctgMenu)), lastEntryRead);
+                                        }
+                                        catch(const std::exception& e){
+                                                update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
+                                        }
 
-                                         ctgMenuCallback(strdup(item_name(curItem)));
-                                         currentCategoryRead = true;
-                                         curMenu = ctgMenu;
-                                         break;
-                                 }
+                                        ctgMenuCallback(strdup(item_name(curItem)));
+                                        currentCategoryRead = true;
+                                        curMenu = ctgMenu;
+                                        break;
+                                }
                 }
                 update_panels();
                 doupdate();
@@ -330,20 +368,25 @@ void CursesProvider::control(){
 }
 void CursesProvider::createCategoriesMenu(){
         int n_choices, i = 3;
-        const std::map<std::string, std::string> *labels = feedly.getLabels();
+        try{
+                const std::map<std::string, std::string> *labels = feedly.getLabels();
+                n_choices = labels->size() + 1;
+                ctgItems = (ITEM **)calloc(sizeof(std::string::value_type)*n_choices, sizeof(ITEM *));
 
-        n_choices = labels->size() + 1;
-        ctgItems = (ITEM **)calloc(sizeof(std::string::value_type)*n_choices, sizeof(ITEM *));
+                ctgItems[0] = new_item("All", labels->at("All").c_str());
+                ctgItems[1] = new_item("Saved", labels->at("Saved").c_str());
+                ctgItems[2] = new_item("Uncategorized", labels->at("Uncategorized").c_str());
 
-        ctgItems[0] = new_item("All", labels->at("All").c_str());
-        ctgItems[1] = new_item("Saved", labels->at("Saved").c_str());
-        ctgItems[2] = new_item("Uncategorized", labels->at("Uncategorized").c_str());
-
-        for(auto it = labels->begin(); it != labels->end(); ++it){
-                if(it->first.compare("All") != 0 && it->first.compare("Saved") != 0 && it->first.compare("Uncategorized") != 0){
-                        ctgItems[i] = new_item((it->first).c_str(), (it->second).c_str());
-                        i++;
+                for(auto it = labels->begin(); it != labels->end(); ++it){
+                        if(it->first.compare("All") != 0 && it->first.compare("Saved") != 0 && it->first.compare("Uncategorized") != 0){
+                                ctgItems[i] = new_item((it->first).c_str(), (it->second).c_str());
+                                i++;
+                        }
                 }
+        }
+        catch(const std::exception& e){
+                ctgItems = NULL;
+                update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
         }
 
         ctgMenu = new_menu((ITEM **)ctgItems);
@@ -371,7 +414,14 @@ void CursesProvider::createPostsMenu(){
         int height, width;
         int n_choices, i = 0;
 
-        const std::vector<PostData> *posts = feedly.giveStreamPosts("All", currentRank);
+        const std::vector<PostData>* posts;
+        try{
+                posts = feedly.giveStreamPosts("All", currentRank);
+        }
+        catch(const std::exception& e){
+                posts = NULL;
+                update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
+        }
 
         if(posts != NULL && posts->size() > 0){
                 totalPosts = posts->size();
@@ -427,7 +477,16 @@ void CursesProvider::ctgMenuCallback(char* label){
         getbegyx(postsWin, starty, startx);
 
         int n_choices, i = 0;
-        const std::vector<PostData>* posts = feedly.giveStreamPosts(label, currentRank);
+        std::string errorMessage;
+        const std::vector<PostData>* posts;
+        try{
+                posts = feedly.giveStreamPosts(label, currentRank);
+        }
+        catch(const std::exception& e){
+                posts = NULL;
+                errorMessage = e.what();
+        }
+
         if(posts == NULL){
                 totalPosts = 0;
                 numRead = 0;
@@ -442,7 +501,7 @@ void CursesProvider::ctgMenuCallback(char* label){
                 win_show(ctgWin, strdup("Categories"), 1, true);
 
                 currentCategoryRead = true;
-                update_statusline("", "", true);
+                update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
                 return;
         }
 
@@ -487,12 +546,21 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
 
         markItemReadAutomatically(previousItem);
 
-        PostData* data = feedly.getSinglePostData(item_index(curItem));
+        PostData* data;
+        try{
+                data = feedly.getSinglePostData(item_index(curItem));
+        }
+        catch (const std::exception& e){
+                data = NULL;
+                update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
+        }
+
         std::string PREVIEW_PATH = TMPDIR + "/preview.html";
         std::ofstream myfile (PREVIEW_PATH.c_str());
 
-        if (myfile.is_open())
+        if (myfile.is_open() && (data != NULL)){
                 myfile << data->content;
+        }
 
         myfile.close();
 
@@ -510,11 +578,21 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         wclear(viewWin);
         mvwprintw(viewWin, 1, 1, content.c_str());
         wrefresh(viewWin);
-        update_statusline(NULL, std::string(data->originTitle + " - " + data->title + " - " + data->originURL).c_str(), true);
+        if(data != NULL){
+                update_statusline(NULL, std::string(data->originTitle + " - " + data->title).c_str(), true);
+        }
+
         update_panels();
 }
 void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
-        PostData* container = feedly.getSinglePostData(item_index(item));
+        PostData* container;
+        try{
+                container = feedly.getSinglePostData(item_index(item));
+        }
+        catch (const std::exception& e){
+                update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
+                return;
+        }
 
         if(preview){
                 std::string PREVIEW_PATH = TMPDIR + "/preview.html";
@@ -546,15 +624,21 @@ void CursesProvider::markItemRead(ITEM* item){
                 update_statusline("[Marking post read]", NULL, true);
                 refresh();
 
-                PostData* container = feedly.getSinglePostData(item_index(item));
-                std::vector<std::string> *temp = new std::vector<std::string>;
-                temp->push_back(container->id);
+                std::string errorMessage;
+                try{
+                        PostData* container = feedly.getSinglePostData(item_index(item));
+                        std::vector<std::string> *temp = new std::vector<std::string>;
+                        temp->push_back(container->id);
 
-                feedly.markPostsRead(const_cast<std::vector<std::string>*>(temp));
-                numUnread--;
-                numRead++;
-                update_statusline("", NULL, true);
+                        feedly.markPostsRead(const_cast<std::vector<std::string>*>(temp));
+                        numUnread--;
+                        numRead++;
+                }
+                catch (const std::exception& e){
+                        errorMessage = e.what();
+                }
 
+                update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
                 update_panels();
         }
 }
@@ -684,17 +768,23 @@ void CursesProvider::cleanup(){
         if(ctgMenu != NULL){
                 unpost_menu(ctgMenu);
                 free_menu(ctgMenu);
+        }
 
-                for(unsigned int i = 0; i < ARRAY_SIZE(ctgItems); ++i)
-                        free_item(ctgItems[i]);
-
+        if(postsMenu != NULL){
                 unpost_menu(postsMenu);
                 free_menu(postsMenu);
         }
 
+        if(ctgItems != NULL){
+                for(unsigned int i = 0; i < ARRAY_SIZE(ctgItems); ++i){
+                        free_item(ctgItems[i]);
+                }
+        }
+
         if(postsItems != NULL){
-                for(unsigned int i = 0; i < ARRAY_SIZE(postsItems); ++i)
+                for(unsigned int i = 0; i < ARRAY_SIZE(postsItems); ++i){
                         free_item(postsItems[i]);
+                }
         }
 
         endwin();

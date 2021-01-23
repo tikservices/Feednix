@@ -21,6 +21,8 @@
 #define HOME_PATH getenv("HOME")
 extern std::string TMPDIR;
 
+using namespace std::literals::string_literals;
+
 FeedlyProvider::FeedlyProvider(){
         curl_global_init(CURL_GLOBAL_DEFAULT);
         verboseFlag = false;
@@ -99,33 +101,23 @@ void FeedlyProvider::authenticateUser(){
         user_data.id = (root["userID"]).asString(); 
 }
 const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
-        curl_retrive("categories");
-
-        Json::Reader reader;
-        Json::Value root;
-
-        bool parsingSuccesful;
-
-        std::ifstream data(TEMP_PATH.c_str(), std::ifstream::binary);
-        parsingSuccesful = reader.parse(data, root);
-
-        if(!data || curl_res != CURLE_OK || !parsingSuccesful){
-                if(!isLogStreamOpen) openLogStream();
-                log_stream << "ERROR: Failed to Retrive Categories" << std::endl;
-                if(!parsingSuccesful)
-                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormattedErrorMessages() << std::endl;
-                if(curl_res != CURLE_OK)
-                        log_stream << "curl_easy_perform() failed : " << curl_easy_strerror(curl_res) << std::endl;
-
-                exit(EXIT_FAILURE);
-                return NULL;
-        }
+        user_data.categories.clear();
         user_data.categories["All"] = "user/" + user_data.id + "/category/global.all";
         user_data.categories["Saved"] = "user/" + user_data.id + "/tag/global.saved";
         user_data.categories["Uncategorized"] = "user/" + user_data.id + "/category/global.uncategorized";
 
-        for(unsigned int i = 0; i < root.size(); i++)
-                user_data.categories[(root[i]["label"]).asString()] = root[i]["id"].asString();
+        try{
+                const auto root{ curl_retrieve("categories") };
+                for(const auto& item : root){
+                    user_data.categories[item["label"].asString()] = item["id"].asString();
+                }
+        }
+        catch(const std::exception& e){
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not get labels" << std::endl;
+                log_stream << e.what() << std::endl;
+                throw;
+        }
 
         return &(user_data.categories);
 }
@@ -136,34 +128,22 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
         if(whichRank)
                 rank = "oldest";
 
-
-        if(category == "All")
-                curl_retrive("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["All"]).c_str(), 0)));
-        else if(category == "Uncategorized")
-                curl_retrive("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Uncategorized"]).c_str(), 0)));
-        else if(category == "Saved")
-                curl_retrive("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Saved"]).c_str(), 0)));
-        else
-                curl_retrive("streams/" + std::string(curl_easy_escape(curl, user_data.categories[category].c_str(), 0)) + "/contents?unreadOnly=true&ranked=newest&count=" + rtrv_count);
-
-        Json::Reader reader;
         Json::Value root;
-
-        bool parsingSuccesful;
-
-        std::ifstream data(TEMP_PATH.c_str(), std::ifstream::binary);
-        parsingSuccesful = reader.parse(data, root);
-
-
-        if(!data || curl_res != CURLE_OK || !parsingSuccesful){
+        try{
+                if(category == "All")
+                        root = curl_retrieve("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["All"]).c_str(), 0)));
+                else if(category == "Uncategorized")
+                        root = curl_retrieve("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Uncategorized"]).c_str(), 0)));
+                else if(category == "Saved")
+                        root = curl_retrieve("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Saved"]).c_str(), 0)));
+                else
+                        root = curl_retrieve("streams/" + std::string(curl_easy_escape(curl, user_data.categories[category].c_str(), 0)) + "/contents?unreadOnly=true&ranked=newest&count=" + rtrv_count);
+        }
+        catch(const std::exception& e){
                 if(!isLogStreamOpen) openLogStream();
-                if(!parsingSuccesful)
-                        log_stream << "\nERROR: Failed to parse tokens file" << reader.getFormattedErrorMessages() << std::endl;
-                if(curl_res != CURLE_OK)
-                        log_stream << "curl_easy_perform() failed : " << curl_easy_strerror(curl_res) << std::endl;
-
-                exit(EXIT_FAILURE);
-                return NULL;
+                log_stream << "Could not get posts" << std::endl;
+                log_stream << e.what() << std::endl;
+                throw;
         }
 
         if(root["items"].size() == 0){
@@ -187,13 +167,9 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
                     item["origin"]["title"].asString()});
         }
 
-        data.close();
         return &(feeds);
-
 }
-bool FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
-        FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
-
+void FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
         Json::Value jsonCont;
         Json::Value array;
 
@@ -205,39 +181,17 @@ bool FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "markAsRead";
 
-        Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont);
-
-        curl = curl_easy_init();
-
-        struct curl_slist *chunk = NULL;
-        chunk = curl_slist_append(chunk, "Content-Type: application/json");
-        chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
-
-        enableVerbose();
-
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-        curl_easy_setopt(curl, CURLOPT_URL, ("https://cloud.feedly.com/v3/markers"));
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
-        curl_easy_setopt(curl, CURLOPT_POST, true);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, document.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-
-        curl_res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        fclose(data_holder);
-        if(curl_res != CURLE_OK){
+        try{
+                curl_retrieve("markers", jsonCont);
+        }
+        catch(const std::exception& e){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "Could not mark post(s) as read" << std::endl;
-                return false;
+                log_stream << e.what() << std::endl;
+                throw;
         }
-
-        return true;
 }
-bool FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
-        FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
-
+void FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
         Json::Value jsonCont;
         Json::Value array;
 
@@ -249,39 +203,17 @@ bool FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "keepUnread";
 
-        Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont);
-
-        curl = curl_easy_init();
-
-        struct curl_slist *chunk = NULL;
-        chunk = curl_slist_append(chunk, "Content-Type: application/json");
-        chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
-
-        enableVerbose();
-
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-        curl_easy_setopt(curl, CURLOPT_URL, ("https://cloud.feedly.com/v3/markers"));
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
-        curl_easy_setopt(curl, CURLOPT_POST, true);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, document.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-
-        curl_res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        fclose(data_holder);
-        if(curl_res != CURLE_OK){
+        try{
+                curl_retrieve("markers", jsonCont);
+        }
+        catch(const std::exception& e){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "Could not mark post(s) as unread" << std::endl;
-                return false;
+                log_stream << e.what() << std::endl;
+                throw;
         }
-
-        return true;
 }
-bool FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
-        FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
-
+void FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
         Json::Value jsonCont;
         Json::Value array;
 
@@ -293,39 +225,17 @@ bool FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "markAsSaved";
 
-        Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont);
-
-        curl = curl_easy_init();
-
-        struct curl_slist *chunk = NULL;
-        chunk = curl_slist_append(chunk, "Content-Type: application/json");
-        chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
-
-        enableVerbose();
-
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-        curl_easy_setopt(curl, CURLOPT_URL, ("https://cloud.feedly.com/v3/markers"));
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
-        curl_easy_setopt(curl, CURLOPT_POST, true);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, document.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-
-        curl_res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        fclose(data_holder);
-        if(curl_res != CURLE_OK){
+        try{
+                curl_retrieve("markers", jsonCont);
+        }
+        catch(const std::exception& e){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "Could not mark post(s) as saved" << std::endl;
-                return false;
+                log_stream << e.what() << std::endl;
+                throw;
         }
-
-        return true;
 }
-bool FeedlyProvider::markPostsUnsaved(const std::vector<std::string>* ids){
-        FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
-
+void FeedlyProvider::markPostsUnsaved(const std::vector<std::string>* ids){
         Json::Value jsonCont;
         Json::Value array;
 
@@ -337,39 +247,17 @@ bool FeedlyProvider::markPostsUnsaved(const std::vector<std::string>* ids){
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "markAsUnsaved";
 
-        Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont);
-
-        curl = curl_easy_init();
-
-        struct curl_slist *chunk = NULL;
-        chunk = curl_slist_append(chunk, "Content-Type: application/json");
-        chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
-
-        enableVerbose();
-
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-        curl_easy_setopt(curl, CURLOPT_URL, ("https://cloud.feedly.com/v3/markers"));
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
-        curl_easy_setopt(curl, CURLOPT_POST, true);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, document.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-
-        curl_res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        fclose(data_holder);
-        if(curl_res != CURLE_OK){
+        try{
+                curl_retrieve("markers", jsonCont);
+        }
+        catch(const std::exception& e){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "Could not mark post(s) as unsaved" << std::endl;
-                return false;
+                log_stream << e.what() << std::endl;
+                throw;
         }
-
-        return true;
 }
-bool FeedlyProvider::markCategoriesRead(const std::string& id, const std::string& lastReadEntryId){
-        FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
-
+void FeedlyProvider::markCategoriesRead(const std::string& id, const std::string& lastReadEntryId){
         Json::Value jsonCont;
         Json::Value array;
 
@@ -381,38 +269,17 @@ bool FeedlyProvider::markCategoriesRead(const std::string& id, const std::string
         jsonCont["categoryIds"] = array;
         jsonCont["action"] = "markAsRead";
 
-        Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont);
-
-        curl = curl_easy_init();
-
-        struct curl_slist *chunk = NULL;
-        chunk = curl_slist_append(chunk, "Content-Type: application/json");
-        chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
-
-        enableVerbose();
-
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-        curl_easy_setopt(curl, CURLOPT_URL, (std::string(FEEDLY_URI) + "markers").c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
-        curl_easy_setopt(curl, CURLOPT_POST, true);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, document.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-
-        curl_res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        fclose(data_holder);
-        if(curl_res != CURLE_OK){
+        try{
+                curl_retrieve("markers", jsonCont);
+        }
+        catch(const std::exception& e){
                 if(!isLogStreamOpen) openLogStream();
                 log_stream << "Could not mark category(ies) as read" << std::endl;
-                return false;
+                log_stream << e.what() << std::endl;
+                throw;
         }
-
-        return true;
 }
-bool FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, std::vector<std::string> categories, const std::string& title){
-        FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
+void FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, std::vector<std::string> categories, const std::string& title){
         int i = 0;
 
         Json::Value jsonCont;
@@ -428,38 +295,19 @@ bool FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, 
                         i++;
                 }
         }
-        else
+        else{
                 jsonCont["categories"] = Json::Value(Json::arrayValue);
-
-        Json::StyledWriter writer;
-        std::string document = writer.write(jsonCont);
-
-        curl = curl_easy_init();
-
-        struct curl_slist *chunk = NULL;
-        chunk = curl_slist_append(chunk, "Content-Type: application/json");
-        chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
-
-        enableVerbose();
-
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-        curl_easy_setopt(curl, CURLOPT_URL, (std::string(FEEDLY_URI) + "subscriptions").c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
-        curl_easy_setopt(curl, CURLOPT_POST, true);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, document.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-
-        curl_res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        fclose(data_holder);
-        if(curl_res != CURLE_OK){
-                if(!isLogStreamOpen) openLogStream();
-                log_stream << "Could not add subscription" << std::endl;
-                return false;
         }
 
-        return false;
+        try{
+                curl_retrieve("subscriptions", jsonCont);
+        }
+        catch(const std::exception& e){
+                if(!isLogStreamOpen) openLogStream();
+                log_stream << "Could not add subscription" << std::endl;
+                log_stream << e.what() << std::endl;
+                throw;
+        }
 }
 
 PostData* FeedlyProvider::getSinglePostData(const int index){
@@ -480,7 +328,7 @@ void FeedlyProvider::setVerbose(bool value){
 void FeedlyProvider::setChangeTokensFlag(bool value){
         changeTokens = value;
 }
-void FeedlyProvider::curl_retrive(const std::string& uri){
+Json::Value FeedlyProvider::curl_retrieve(const std::string& uri, const Json::Value& jsonCont){
         struct curl_slist *chunk = NULL;
 
         FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
@@ -490,15 +338,47 @@ void FeedlyProvider::curl_retrive(const std::string& uri){
         curl_easy_setopt(curl, CURLOPT_URL, (std::string(FEEDLY_URI) + uri).c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
         curl_easy_setopt(curl, CURLOPT_AUTOREFERER, true);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+
+        if(!jsonCont.isNull()){
+                Json::StyledWriter writer;
+                std::string document = writer.write(jsonCont);
+                curl_easy_setopt(curl, CURLOPT_POST, true);
+                curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, document.c_str());
+                chunk = curl_slist_append(chunk, "Content-Type: application/json");
+        }
 
         enableVerbose();
 
         curl_res = curl_easy_perform(curl);
+        if(curl_res != CURLE_OK){
+                throw std::runtime_error("curl_easy_perform() failed: "s + curl_easy_strerror(curl_res));
+        }
 
         fclose(data_holder);
         curl_easy_cleanup(curl);
+
+        std::ifstream data(TEMP_PATH.c_str(), std::ifstream::binary);
+        if(!data){
+                throw std::runtime_error("Failed to open a temporary file: "s + TEMP_PATH);
+        }
+
+        Json::Reader reader;
+        Json::Value root;
+        if(!reader.parse(data, root)){
+                throw std::runtime_error("Failed to parse tokens file: "s + reader.getFormattedErrorMessages());
+        }
+
+        if(root.isObject() && root.isMember("errorMessage") && root.isMember("errorId")){
+                const auto message = "Feedly returned an error: "s
+                    + root["errorMessage"].asString()
+                    + " ("s + root["errorId"].asString() + ")"s;
+                throw std::runtime_error(message.c_str());
+        }
+
+        return root;
 }
 void FeedlyProvider::openLogStream(){
         if(!log_stream.is_open()){
