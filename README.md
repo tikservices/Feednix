@@ -69,6 +69,12 @@ to keep this project open source, hence this new method.
 * A : Mark category read
 * R : Refersh highlighted category (Retrive post by category)
 
+## Setting
+
+Feednix will create a setting file on the first launch at `~/.config/feednix/config.json`.
+
+* `seconds_to_mark_as_read` (integer, default = `0`) : Indicates how many seconds an article should have been shown for when Feednix marks it as read automatically.  A negative value indicates that Feednix won't mark an article as read unless you does so by "r" key.
+
 ## Contributing
 
 Please visit this [page](https://feednix-jarkore.rhcloud.com) for details.
