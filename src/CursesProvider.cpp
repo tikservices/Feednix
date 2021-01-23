@@ -112,7 +112,7 @@ void CursesProvider::control(){
         }
         else{
                 curMenu = postsMenu;
-                changeSelectedItem(curMenu, REQ_UP_ITEM);
+                changeSelectedItem(curMenu, REQ_FIRST_ITEM);
         }
 
         ITEM* curItem = current_item(curMenu);
@@ -326,7 +326,7 @@ void CursesProvider::control(){
                 doupdate();
         }
 
-        markCurrentItemReadAutomatically();
+        markItemReadAutomatically(current_item(postsMenu));
 }
 void CursesProvider::createCategoriesMenu(){
         int n_choices, i = 3;
@@ -414,10 +414,13 @@ void CursesProvider::createPostsMenu(){
 
         post_menu(postsMenu);
 
-        if(posts == NULL)
+        if(posts == NULL){
                 print_in_center(postsWin, 3, 1, height, width-4, strdup("All Posts Read"), 1);
+        }
 }
 void CursesProvider::ctgMenuCallback(char* label){
+        markItemReadAutomatically(current_item(postsMenu));
+
         int startx, starty, height, width;
 
         getmaxyx(postsWin, height, width);
@@ -469,17 +472,20 @@ void CursesProvider::ctgMenuCallback(char* label){
         win_show(postsWin, strdup("Posts"), 1, true);
         win_show(ctgWin, strdup("Categories"), 2, false);
 
-        changeSelectedItem(postsMenu, REQ_UP_ITEM);
+        changeSelectedItem(postsMenu, REQ_FIRST_ITEM);
 }
 void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
-        if(curMenu == postsMenu){
-            markCurrentItemReadAutomatically();
-        }
-
+        ITEM* previousItem = current_item(curMenu);
         menu_driver(curMenu, req);
         ITEM* curItem = current_item(curMenu);
 
-        if(curMenu != postsMenu ||  !curItem) return;
+        if((curMenu != postsMenu) ||
+            !curItem ||
+            ((previousItem == curItem) && (req != REQ_FIRST_ITEM))){
+                return;
+        }
+
+        markItemReadAutomatically(previousItem);
 
         PostData* data = feedly.getSinglePostData(item_index(curItem));
         std::string PREVIEW_PATH = TMPDIR + "/preview.html";
@@ -502,8 +508,9 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         }
 
         wclear(viewWin);
-        mvwprintw(viewWin, 1, 1, "%s", content.c_str());
-        update_statusline(NULL, std::string(data->originTitle + " - " + data->title).c_str(), true);
+        mvwprintw(viewWin, 1, 1, content.c_str());
+        wrefresh(viewWin);
+        update_statusline(NULL, std::string(data->originTitle + " - " + data->title + " - " + data->originURL).c_str(), true);
         update_panels();
 }
 void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
@@ -551,15 +558,14 @@ void CursesProvider::markItemRead(ITEM* item){
                 update_panels();
         }
 }
-// Mark the current article as read if it has been shown for more than a certain period of time.
-void CursesProvider::markCurrentItemReadAutomatically(){
+// Mark an article as read if it has been shown for more than a certain period of time.
+void CursesProvider::markItemReadAutomatically(ITEM* item){
         const auto now = std::chrono::steady_clock::now();
-        if(ITEM* curItem = current_item(postsMenu)){
-                if ((now > lastPostSelectionTime) &&
-                    (secondsToMarkAsRead >= std::chrono::seconds::zero()) &&
-                    ((now - lastPostSelectionTime) > secondsToMarkAsRead)){
-                        markItemRead(curItem);
-                }
+        if ((item != NULL) &&
+            (now > lastPostSelectionTime) &&
+            (secondsToMarkAsRead >= std::chrono::seconds::zero()) &&
+            ((now - lastPostSelectionTime) > secondsToMarkAsRead)){
+                markItemRead(item);
         }
 
         lastPostSelectionTime = now;
