@@ -170,8 +170,21 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
                 return NULL;
         }
 
-        for(unsigned int i = 0; i < root["items"].size(); i++){
-                feeds.push_back(PostData{root["items"][i]["summary"]["content"].asString(), root["items"][i]["title"].asString(), root["items"][i]["id"].asString(), root["items"][i]["originId"].asString(), root["items"][i]["origin"]["title"].asString()});
+        for(const auto& item : root["items"]){
+                auto url = std::string{};
+                for(const auto& alternate : item["alternate"]){
+                        if(alternate["type"].asString() == "text/html"){
+                                url = alternate["href"].asString();
+                                break;
+                        }
+                }
+
+                feeds.push_back({
+                    item["summary"]["content"].asString(),
+                    item["title"].asString(),
+                    item["id"].asString(),
+                    url,
+                    item["origin"]["title"].asString()});
         }
 
         data.close();
