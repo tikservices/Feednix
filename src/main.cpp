@@ -15,16 +15,31 @@ namespace fs = std::filesystem;
 CursesProvider *curses;
 std::string TMPDIR;
 
-void atExitFunction(void){
-        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -and -not -name \'log.txt\' -delete 2> /dev/null").c_str());
-        system(std::string("rm -R " + TMPDIR + " 2> /dev/null").c_str());
+void atExitFunction(){
+        auto errorCode = std::error_code{};
+
+        // Remove $TMPDIR/feednix.XXXXXX.
+        if(!TMPDIR.empty()){
+                fs::remove_all(fs::path{TMPDIR}, errorCode);
+        }
+
+        // Remove all under $HOME/.config/feednix except config.json and log.txt.
+        const auto home_path = fs::path{HOME_PATH};
+        const auto config_dir = home_path / ".config" / "feednix";
+        for(const auto& entry : fs::directory_iterator(config_dir)){
+                const auto& path = entry.path();
+                const auto& filename = path.filename();
+                if((filename != "config.json") && (filename != "log.txt")){
+                        fs::remove_all(path, errorCode);
+                }
+        }
+
         curses->cleanup();
 }
 
 void sighandler(int signum){
-        system(std::string("find " + std::string(HOME_PATH) + "/.config/feednix -type f -not -name \'config.json\' -and -not -name \'log.txt\' -delete 2> /dev/null").c_str());
+        atExitFunction();
         signal(signum, SIG_DFL);
-        curses->cleanup();
         kill(getpid(), signum);
 }
 
