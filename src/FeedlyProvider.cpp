@@ -342,7 +342,8 @@ Json::Value FeedlyProvider::curl_retrieve(const std::string& uri, const Json::Va
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
-        if(!jsonCont.isNull()){
+        const auto isPost{ !jsonCont.isNull() };
+        if(isPost){
                 Json::StyledWriter writer;
                 std::string document = writer.write(jsonCont);
                 curl_easy_setopt(curl, CURLOPT_POST, true);
@@ -359,6 +360,10 @@ Json::Value FeedlyProvider::curl_retrieve(const std::string& uri, const Json::Va
 
         fclose(data_holder);
         curl_easy_cleanup(curl);
+
+        if(isPost){
+                return Json::Value();
+        }
 
         std::ifstream data(TEMP_PATH.c_str(), std::ifstream::binary);
         if(!data){
