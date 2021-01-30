@@ -1,9 +1,5 @@
 #include <curl/curl.h>
-#ifdef __APPLE__
 #include <json/json.h>
-#else
-#include <jsoncpp/json/json.h>
-#endif
 #include <string>
 #include <iostream>
 #include <fstream>
