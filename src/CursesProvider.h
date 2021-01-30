@@ -17,7 +17,7 @@ class CursesProvider{
                 CursesProvider(bool verbose, bool change);
                 void init();
                 void control();
-                void cleanup();
+                ~CursesProvider();
         private:
                 FeedlyProvider feedly;
                 WINDOW *ctgWin, *postsWin, *viewWin;

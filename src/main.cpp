@@ -12,7 +12,6 @@
 namespace fs = std::filesystem;
 
 #define HOME_PATH getenv("HOME")
-CursesProvider *curses;
 std::string TMPDIR;
 
 void atExitFunction(){
@@ -33,8 +32,6 @@ void atExitFunction(){
                         fs::remove_all(path, errorCode);
                 }
         }
-
-        curses->cleanup();
 }
 
 void sighandler(int signum){
@@ -93,17 +90,11 @@ int main(int argc, char **argv){
                                 }
                         }
                 }
-                curses = new CursesProvider(verboseEnabled, changeTokens);
-        }
-        else{
-                curses = new CursesProvider(false, false);
         }
 
-
-        curses->init();
-        curses->control();
-
-        delete curses;
+        auto curses = CursesProvider(verboseEnabled, changeTokens);
+        curses.init();
+        curses.control();
         return 0;
 }
 

@@ -680,7 +680,7 @@ void CursesProvider::update_infoline(const char* info){
         mvprintw(LINES - 1, 0, info);
         attroff(COLOR_PAIR(5));
 }
-void CursesProvider::cleanup(){
+CursesProvider::~CursesProvider(){
         if(ctgMenu != NULL){
                 unpost_menu(ctgMenu);
                 free_menu(ctgMenu);
