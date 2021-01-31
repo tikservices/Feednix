@@ -18,7 +18,6 @@
 
 #include "CursesProvider.h"
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define CTRLD   4
 #define POSTS_STATUSLINE "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  = : change sort type s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit"
 #define CTG_STATUSLINE "Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit"
@@ -363,29 +362,25 @@ void CursesProvider::control(){
         markItemReadAutomatically(current_item(postsMenu));
 }
 void CursesProvider::createCategoriesMenu(){
-        int n_choices, i = 3;
+        clearCategoryItems();
         try{
                 const std::map<std::string, std::string> *labels = feedly.getLabels();
-                n_choices = labels->size() + 1;
-                ctgItems = (ITEM **)calloc(sizeof(std::string::value_type)*n_choices, sizeof(ITEM *));
-
-                ctgItems[0] = new_item("All", labels->at("All").c_str());
-                ctgItems[1] = new_item("Saved", labels->at("Saved").c_str());
-                ctgItems[2] = new_item("Uncategorized", labels->at("Uncategorized").c_str());
-
-                for(auto it = labels->begin(); it != labels->end(); ++it){
-                        if(it->first.compare("All") != 0 && it->first.compare("Saved") != 0 && it->first.compare("Uncategorized") != 0){
-                                ctgItems[i] = new_item((it->first).c_str(), (it->second).c_str());
-                                i++;
+                ctgItems.push_back(new_item("All", labels->at("All").c_str()));
+                ctgItems.push_back(new_item("Saved", labels->at("Saved").c_str()));
+                ctgItems.push_back(new_item("Uncategorized", labels->at("Uncategorized").c_str()));
+                for(const auto& [label, id] : *labels){
+                        if((label != "All") && (label != "Saved") && (label != "Uncategorized")){
+                                ctgItems.push_back(new_item(label.c_str(), id.c_str()));
                         }
                 }
         }
         catch(const std::exception& e){
-                ctgItems = NULL;
+                clearCategoryItems();
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
         }
 
-        ctgMenu = new_menu((ITEM **)ctgItems);
+        ctgItems.push_back(NULL);
+        ctgMenu = new_menu(ctgItems.data());
 
         ctgWin = newwin((LINES - 2 - viewWinHeight), ctgWinWidth, 0, 0);
         keypad(ctgWin, TRUE);
@@ -408,8 +403,8 @@ void CursesProvider::createCategoriesMenu(){
 }
 void CursesProvider::createPostsMenu(){
         int height, width;
-        int n_choices, i = 0;
 
+        clearPostItems();
         const std::vector<PostData>* posts;
         try{
                 posts = feedly.giveStreamPosts("All", currentRank);
@@ -422,16 +417,13 @@ void CursesProvider::createPostsMenu(){
         if(posts != NULL && posts->size() > 0){
                 totalPosts = posts->size();
                 numUnread = totalPosts;
-                n_choices = posts->size();
-                postsItems = (ITEM **)calloc(sizeof(std::vector<PostData>::value_type)*n_choices, sizeof(ITEM *));
-
-                for(auto it = posts->begin(); it != posts->end(); ++it){
-                        postsItems[i] = new_item((it->title).c_str(), (it->id).c_str());
-                        i++;
+                for(const auto& post : *posts){
+                        postsItems.push_back(new_item(post.title.c_str(), post.id.c_str()));
                 }
 
-                postsMenu = new_menu((ITEM **)postsItems);
-                lastEntryRead = item_description(postsItems[0]);
+                postsItems.push_back(NULL);
+                postsMenu = new_menu(postsItems.data());
+                lastEntryRead = item_description(postsItems.at(0));
         }
         else{
                 postsMenu = new_menu(NULL);
@@ -472,7 +464,6 @@ void CursesProvider::ctgMenuCallback(char* label){
         getmaxyx(postsWin, height, width);
         getbegyx(postsWin, starty, startx);
 
-        int n_choices, i = 0;
         std::string errorMessage;
         const std::vector<PostData>* posts;
         try{
@@ -505,22 +496,19 @@ void CursesProvider::ctgMenuCallback(char* label){
         numRead = 0;
         numUnread = totalPosts;
 
-        n_choices = posts->size() + 1;
-        ITEM** items = (ITEM **)calloc(sizeof(std::vector<PostData>::value_type)*n_choices, sizeof(ITEM *));
-
-        for(auto it = posts->begin(); it != posts->end(); ++it){
-                items[i] = new_item((it->title).c_str(), (it->id).c_str());
-                i++;
+        clearPostItems();
+        for(const auto& post : *posts){
+                postsItems.push_back(new_item(post.title.c_str(), post.id.c_str()));
         }
 
-        items[i] = NULL;
+        postsItems.push_back(NULL);
 
         unpost_menu(postsMenu);
-        set_menu_items(postsMenu, items);
+        set_menu_items(postsMenu, postsItems.data());
         post_menu(postsMenu);
 
         set_menu_format(postsMenu, height, 0);
-        lastEntryRead = item_description(items[0]);
+        lastEntryRead = item_description(postsItems.at(0));
         currentCategoryRead = false;
 
         update_statusline("", NULL, true);
@@ -760,6 +748,24 @@ void CursesProvider::update_infoline(const char* info){
         mvprintw(LINES - 1, 0, info);
         attroff(COLOR_PAIR(5));
 }
+void CursesProvider::clearCategoryItems(){
+        for(const auto& ctgItem : ctgItems){
+                if(ctgItem != NULL){
+                        free_item(ctgItem);
+                }
+        }
+
+        ctgItems.clear();
+}
+void CursesProvider::clearPostItems(){
+        for(const auto& postItem : postsItems){
+                if(postItem != NULL){
+                        free_item(postItem);
+                }
+        }
+
+        postsItems.clear();
+}
 CursesProvider::~CursesProvider(){
         if(ctgMenu != NULL){
                 unpost_menu(ctgMenu);
@@ -771,18 +777,8 @@ CursesProvider::~CursesProvider(){
                 free_menu(postsMenu);
         }
 
-        if(ctgItems != NULL){
-                for(unsigned int i = 0; i < ARRAY_SIZE(ctgItems); ++i){
-                        free_item(ctgItems[i]);
-                }
-        }
-
-        if(postsItems != NULL){
-                for(unsigned int i = 0; i < ARRAY_SIZE(postsItems); ++i){
-                        free_item(postsItems[i]);
-                }
-        }
-
+        clearCategoryItems();
+        clearPostItems();
         endwin();
         feedly.curl_cleanup();
 }

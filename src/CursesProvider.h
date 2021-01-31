@@ -22,7 +22,8 @@ class CursesProvider{
                 FeedlyProvider feedly;
                 WINDOW *ctgWin, *postsWin, *viewWin;
                 PANEL  *panels[3], *top;
-                ITEM **ctgItems, **postsItems;
+                std::vector<ITEM*> ctgItems{};
+                std::vector<ITEM*> postsItems{};
                 MENU *ctgMenu, *postsMenu;
                 std::string lastEntryRead, statusLine[3];
                 std::chrono::time_point<std::chrono::steady_clock> lastPostSelectionTime{std::chrono::time_point<std::chrono::steady_clock>::max()};
@@ -31,6 +32,8 @@ class CursesProvider{
                 int totalPosts = 0, numRead = 0, numUnread = 0;
                 int viewWinHeightPer = VIEW_WIN_HEIGHT_PER, viewWinHeight = 0, ctgWinWidth = CTG_WIN_WIDTH;
                 bool currentCategoryRead;
+                void clearCategoryItems();
+                void clearPostItems();
                 void createCategoriesMenu();
                 void createPostsMenu();
                 void changeSelectedItem(MENU* curMenu, int req);
