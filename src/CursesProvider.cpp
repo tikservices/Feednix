@@ -47,6 +47,10 @@ void CursesProvider::init(){
         Json::Value root;
         Json::Reader reader;
 
+        if(const auto browserEnv = getenv("BROWSER")){
+                textBrowser = browserEnv;
+        }
+
         std::ifstream tokenFile(std::string(std::string(HOME_PATH) + "/.config/feednix/config.json").c_str(), std::ifstream::binary);
         if(reader.parse(tokenFile, root)){
                 init_pair(1, root["colors"]["active_panel"].asInt(), root["colors"]["background"].asInt());
@@ -64,6 +68,13 @@ void CursesProvider::init(){
 
                 currentRank = root["rank"].asBool();
                 secondsToMarkAsRead = std::chrono::seconds(root["seconds_to_mark_as_read"].asInt());
+
+                if(textBrowser.empty()){
+                        textBrowser = root["text_browser"].asString();
+                        if(textBrowser.empty()){
+                                textBrowser = "w3m";
+                        }
+                }
         }
         else{
                 endwin();
@@ -579,6 +590,7 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
                 return;
         }
 
+        auto command = std::string{};
         if(preview){
                 std::string PREVIEW_PATH = TMPDIR + "/preview.html";
                 std::ofstream myfile (PREVIEW_PATH.c_str());
@@ -588,19 +600,26 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
 
                 myfile.close();
 
-                def_prog_mode();
-                endwin();
-                system(std::string("w3m " + PREVIEW_PATH).c_str());
-                reset_prog_mode();
+                command = "w3m " + PREVIEW_PATH;
         }
         else{
-                def_prog_mode();
-                endwin();
-                system(std::string("w3m \'" + container->originURL + "\'").c_str());
-                reset_prog_mode();
+                command = textBrowser + " \'" + container->originURL + "\'";
         }
-        markItemRead(item);
-        lastEntryRead = item_description(item);
+
+        def_prog_mode();
+        endwin();
+        const auto exitCode = system(command.c_str());
+        reset_prog_mode();
+
+        if(exitCode == 0){
+                markItemRead(item);
+                lastEntryRead = item_description(item);
+        }
+        else{
+                const auto updateStatus = preview ? "Failed to preview the post" : "Failed to open the post";
+                update_statusline(updateStatus, NULL /*post*/, false /*showCounter*/);
+        }
+
         system(std::string("rm " + TMPDIR + "/preview.html 2> /dev/null").c_str());
 }
 void CursesProvider::markItemRead(ITEM* item){
