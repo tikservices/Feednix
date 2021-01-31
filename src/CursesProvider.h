@@ -14,7 +14,7 @@
 
 class CursesProvider{
         public:
-                CursesProvider(bool verbose, bool change);
+                CursesProvider(const std::filesystem::path& tmpPath, bool verbose, bool change);
                 void init();
                 void control();
                 ~CursesProvider();
@@ -29,10 +29,11 @@ class CursesProvider{
                 std::chrono::time_point<std::chrono::steady_clock> lastPostSelectionTime{std::chrono::time_point<std::chrono::steady_clock>::max()};
                 std::chrono::seconds secondsToMarkAsRead;
                 std::string textBrowser;
+                const std::filesystem::path previewPath;
                 bool currentRank = 0;
                 int totalPosts = 0, numRead = 0, numUnread = 0;
                 int viewWinHeightPer = VIEW_WIN_HEIGHT_PER, viewWinHeight = 0, ctgWinWidth = CTG_WIN_WIDTH;
-                bool currentCategoryRead;
+                bool currentCategoryRead{};
                 void clearCategoryItems();
                 void clearPostItems();
                 void createCategoriesMenu();

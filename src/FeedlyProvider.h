@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <string>
 #include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <vector>
@@ -34,7 +35,7 @@ struct PostData{
 
 class FeedlyProvider{
         public:
-                FeedlyProvider();
+                FeedlyProvider(const std::filesystem::path& tmpDir);
                 void authenticateUser();
                 void markPostsRead(const std::vector<std::string>* ids);
                 void markPostsSaved(const std::vector<std::string>* ids);
@@ -55,7 +56,8 @@ class FeedlyProvider{
                 std::ofstream log_stream;
                 std::string feedly_url;
                 std::string userAuthCode;
-                std::string TOKEN_PATH, TEMP_PATH, COOKIE_PATH, rtrv_count;
+                std::string TOKEN_PATH, COOKIE_PATH, rtrv_count;
+                const std::filesystem::path tempPath;
                 std::filesystem::path logPath;
                 std::filesystem::path configPath;
                 UserData user_data;
