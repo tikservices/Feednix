@@ -467,7 +467,8 @@ void CursesProvider::createPostsMenu(){
 void CursesProvider::ctgMenuCallback(char* label){
         markItemReadAutomatically(current_item(postsMenu));
 
-        int startx, starty, height, width;
+        int startx, height, width;
+        [[maybe_unused]] int starty;
 
         getmaxyx(postsWin, height, width);
         getbegyx(postsWin, starty, startx);
@@ -651,7 +652,8 @@ void CursesProvider::markItemReadAutomatically(ITEM* item){
         lastPostSelectionTime = now;
 }
 void CursesProvider::win_show(WINDOW *win, char *label, int label_color, bool highlight){
-        int startx, starty, height, width;
+        int startx, width;
+        [[maybe_unused]] int starty, height;
 
         getbegyx(win, starty, startx);
         getmaxyx(win, height, width);
