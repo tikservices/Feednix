@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <json/json.h>
 #include <json/writer.h>
@@ -13,16 +14,15 @@
 
 #include "FeedlyProvider.h"
 
-extern std::string TMPDIR;
-
 namespace fs = std::filesystem;
 using namespace std::literals::string_literals;
+using FileStream = std::unique_ptr<FILE, decltype(&fclose)>;
 
-FeedlyProvider::FeedlyProvider(){
+FeedlyProvider::FeedlyProvider(const fs::path& tmpDir):
+        tempPath{tmpDir / "temp.txt"}{
+
         curl_global_init(CURL_GLOBAL_DEFAULT);
-        verboseFlag = false;
 
-        TEMP_PATH = TMPDIR + "/temp.txt";
         const auto configRoot = fs::path{getenv("HOME")} / ".config" / "feednix";
         configPath = configRoot / "config.json";
         logPath = configRoot / "log.txt";
@@ -339,43 +339,46 @@ void FeedlyProvider::setChangeTokensFlag(bool value){
 Json::Value FeedlyProvider::curl_retrieve(const std::string& uri, const Json::Value& jsonCont){
         struct curl_slist *chunk = NULL;
 
-        FILE* data_holder = fopen(TEMP_PATH.c_str(), "wb");
-        chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
+        const auto isPost = !jsonCont.isNull();
+        if(const auto dataHolder = FileStream(fopen(tempPath.c_str(), "wb"), &fclose)){
+                chunk = curl_slist_append(chunk, ("Authorization: OAuth " + user_data.authToken).c_str());
 
-        curl = curl_easy_init();
-        curl_easy_setopt(curl, CURLOPT_URL, (std::string(FEEDLY_URI) + uri).c_str());
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
-        curl_easy_setopt(curl, CURLOPT_AUTOREFERER, true);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, data_holder);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+                curl = curl_easy_init();
+                curl_easy_setopt(curl, CURLOPT_URL, (std::string(FEEDLY_URI) + uri).c_str());
+                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
+                curl_easy_setopt(curl, CURLOPT_AUTOREFERER, true);
+                curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/4.0");
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, dataHolder.get());
+                curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
-        const auto isPost{ !jsonCont.isNull() };
-        if(isPost){
-                Json::StyledWriter writer;
-                std::string document = writer.write(jsonCont);
-                curl_easy_setopt(curl, CURLOPT_POST, true);
-                curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, document.c_str());
-                chunk = curl_slist_append(chunk, "Content-Type: application/json");
+                if(isPost){
+                        Json::StyledWriter writer;
+                        std::string document = writer.write(jsonCont);
+                        curl_easy_setopt(curl, CURLOPT_POST, true);
+                        curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, document.c_str());
+                        chunk = curl_slist_append(chunk, "Content-Type: application/json");
+                }
+
+                enableVerbose();
+
+                curl_res = curl_easy_perform(curl);
+                if(curl_res != CURLE_OK){
+                        throw std::runtime_error("curl_easy_perform() failed: "s + curl_easy_strerror(curl_res));
+                }
+        }
+        else{
+                throw std::runtime_error("Failed to open the temporary file stream: "s + strerror(errno));
         }
 
-        enableVerbose();
-
-        curl_res = curl_easy_perform(curl);
-        if(curl_res != CURLE_OK){
-                throw std::runtime_error("curl_easy_perform() failed: "s + curl_easy_strerror(curl_res));
-        }
-
-        fclose(data_holder);
         curl_easy_cleanup(curl);
 
         if(isPost){
                 return Json::Value();
         }
 
-        std::ifstream data(TEMP_PATH.c_str(), std::ifstream::binary);
+        std::ifstream data(tempPath.c_str(), std::ifstream::binary);
         if(!data){
-                throw std::runtime_error("Failed to open a temporary file: "s + TEMP_PATH);
+                throw std::runtime_error("Failed to open a temporary file: " + tempPath.native());
         }
 
         Json::Reader reader;

@@ -1,4 +1,5 @@
 #include <curses.h>
+#include <filesystem>
 #include <map>
 #include <panel.h>
 #include <menu.h>
@@ -23,9 +24,15 @@
 #define CTG_STATUSLINE "Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit"
 
 #define HOME_PATH getenv("HOME")
-extern std::string TMPDIR;
 
-CursesProvider::CursesProvider(bool verbose, bool change){
+namespace fs = std::filesystem;
+using namespace std::literals::string_literals;
+using PipeStream = std::unique_ptr<FILE, decltype(&pclose)>;
+
+CursesProvider::CursesProvider(const fs::path& tmpPath, bool verbose, bool change):
+        feedly{FeedlyProvider(tmpPath)},
+        previewPath{tmpPath / "preview.html"}{
+
         feedly.setVerbose(verbose);
         feedly.setChangeTokensFlag(change);
         feedly.authenticateUser();
@@ -39,8 +46,6 @@ CursesProvider::CursesProvider(bool verbose, bool change){
         keypad(stdscr, TRUE);
         curs_set(0);
 
-        lastEntryRead = "";
-        currentCategoryRead = false;
         feedly.setVerbose(false);
 }
 void CursesProvider::init(){
@@ -567,8 +572,7 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
         }
 
-        std::string PREVIEW_PATH = TMPDIR + "/preview.html";
-        std::ofstream myfile (PREVIEW_PATH.c_str());
+        std::ofstream myfile(previewPath.c_str());
 
         if (myfile.is_open() && (data != NULL)){
                 myfile << data->content;
@@ -576,15 +580,15 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
 
         myfile.close();
 
-        FILE* stream = popen(std::string("w3m -dump -cols " + std::to_string(COLS - 2) + " " + PREVIEW_PATH).c_str(), "r");
-
         std::string content;
         char buffer[256];
-
-        if (stream) {
-                while (!feof(stream))
-                        if (fgets(buffer, 256, stream) != NULL) content.append(buffer);
-                pclose(stream);
+        const auto command = "w3m -dump -cols " + std::to_string(COLS - 2) + " " + previewPath.native();
+        if(const auto stream = PipeStream(popen(command.c_str(), "r"), &pclose)){
+                while(!feof(stream.get())){
+                        if(fgets(buffer, 256, stream.get()) != NULL){
+                                content.append(buffer);
+                        }
+                }
         }
 
         wclear(viewWin);
@@ -608,15 +612,14 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
 
         auto command = std::string{};
         if(preview){
-                std::string PREVIEW_PATH = TMPDIR + "/preview.html";
-                std::ofstream myfile (PREVIEW_PATH.c_str());
-
-                if (myfile.is_open())
+                std::ofstream myfile(previewPath.c_str());
+                if (myfile.is_open()){
                         myfile << container->content;
+                }
 
                 myfile.close();
 
-                command = "w3m " + PREVIEW_PATH;
+                command = "w3m " + previewPath.native();
         }
         else{
                 command = textBrowser + " \'" + container->originURL + "\'";
@@ -636,7 +639,10 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
                 update_statusline(updateStatus, NULL /*post*/, false /*showCounter*/);
         }
 
-        system(std::string("rm " + TMPDIR + "/preview.html 2> /dev/null").c_str());
+        if(preview){
+                auto errorCode = std::error_code{};
+                fs::remove(previewPath, errorCode);
+        }
 }
 void CursesProvider::markItemRead(ITEM* item){
         if(item_opts(item)){

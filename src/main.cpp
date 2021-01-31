@@ -12,14 +12,14 @@
 namespace fs = std::filesystem;
 
 #define HOME_PATH getenv("HOME")
-std::string TMPDIR;
+static fs::path TMPDIR;
 
 void atExitFunction(){
         auto errorCode = std::error_code{};
 
         // Remove $TMPDIR/feednix.XXXXXX.
         if(!TMPDIR.empty()){
-                fs::remove_all(fs::path{TMPDIR}, errorCode);
+                fs::remove_all(TMPDIR, errorCode);
         }
 
         // Remove all under $HOME/.config/feednix except config.json and log.txt.
@@ -61,16 +61,11 @@ int main(int argc, char **argv){
                 fs::permissions(config_path, fs::perms::owner_read | fs::perms::owner_write);
         }
 
-        char *sys_tmpdir = getenv("TMPDIR");
-        if(!sys_tmpdir)
-                sys_tmpdir = (char *)"/tmp";
-
-        char * pathTemp = (char *)malloc(sizeof(char) * (strlen(sys_tmpdir) + 16));
-        strcpy(pathTemp, sys_tmpdir);
-        strcat(pathTemp, "/feednix.XXXXXX");
-
-        TMPDIR = std::string(mkdtemp(pathTemp));
-        free(pathTemp);
+        const auto pathTemp = fs::temp_directory_path() / "feednix.XXXXXX";
+        const auto& pathTempString = pathTemp.native();
+        auto pathTempBuffer = std::vector(pathTempString.begin(), pathTempString.end());
+        pathTempBuffer.push_back('\0');
+        TMPDIR = fs::path(mkdtemp(pathTempBuffer.data()));
 
         if(argc >= 2){
                 for(int i = 1; i < argc; ++i){
@@ -92,7 +87,7 @@ int main(int argc, char **argv){
                 }
         }
 
-        auto curses = CursesProvider(verboseEnabled, changeTokens);
+        auto curses = CursesProvider(TMPDIR, verboseEnabled, changeTokens);
         curses.init();
         curses.control();
         return 0;
