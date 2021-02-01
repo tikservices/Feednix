@@ -397,7 +397,7 @@ void CursesProvider::createCategoriesMenu(){
         win_show(ctgWin, strdup("Categories"),  2, false);
 
         menu_opts_off(ctgMenu, O_SHOWDESC);
-        menu_opts_on(postsMenu, O_NONCYCLIC);
+        menu_opts_on(ctgMenu, O_NONCYCLIC);
 
         post_menu(ctgMenu);
 }
