@@ -118,6 +118,9 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
 
         return &(user_data.categories);
 }
+CurlString FeedlyProvider::escapeCurlString(const std::string& s){
+        return CurlString(curl_easy_escape(curl, s.c_str(), 0), &curl_free);
+}
 const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& category, bool whichRank){
         feeds.clear();
 
@@ -127,14 +130,22 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
 
         Json::Value root;
         try{
-                if(category == "All")
-                        root = curl_retrieve("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["All"]).c_str(), 0)));
-                else if(category == "Uncategorized")
-                        root = curl_retrieve("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Uncategorized"]).c_str(), 0)));
-                else if(category == "Saved")
-                        root = curl_retrieve("streams/contents?ranked=" + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + std::string(curl_easy_escape(curl, (user_data.categories["Saved"]).c_str(), 0)));
-                else
-                        root = curl_retrieve("streams/" + std::string(curl_easy_escape(curl, user_data.categories[category].c_str(), 0)) + "/contents?unreadOnly=true&ranked=newest&count=" + rtrv_count);
+                if(category == "All"){
+                        const auto streamId = escapeCurlString(user_data.categories["All"]);
+                        root = curl_retrieve("streams/contents?ranked="s + rank + "&count=" + rtrv_count + "&unreadOnly=true&streamId=" + streamId.get());
+                }
+                else if(category == "Uncategorized"){
+                        const auto streamId = escapeCurlString(user_data.categories["Uncategorized"]);
+                        root = curl_retrieve("streams/contents?ranked="s + rank + "&count="s + rtrv_count + "&unreadOnly=true&streamId=" + streamId.get());
+                }
+                else if(category == "Saved"){
+                        const auto streamId = escapeCurlString(user_data.categories["Saved"]);
+                        root = curl_retrieve("streams/contents?ranked="s + rank + "&count="s + rtrv_count + "&unreadOnly=true&streamId=" + streamId.get());
+                }
+                else{
+                        const auto streamId = escapeCurlString(user_data.categories[category]);
+                        root = curl_retrieve("streams/"s + streamId.get() + "/contents?unreadOnly=true&ranked=newest&count="s + rtrv_count);
+                }
         }
         catch(const std::exception& e){
                 openLogStream();
