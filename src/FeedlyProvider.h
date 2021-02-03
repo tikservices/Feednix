@@ -1,5 +1,6 @@
 #include <curl/curl.h>
 #include <json/json.h>
+#include <filesystem>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -53,6 +54,8 @@ class FeedlyProvider{
                 std::string feedly_url;
                 std::string userAuthCode;
                 std::string TOKEN_PATH, TEMP_PATH, COOKIE_PATH, rtrv_count;
+                std::filesystem::path logPath;
+                std::filesystem::path configPath;
                 UserData user_data;
                 bool verboseFlag, changeTokens, isLogStreamOpen=false;
                 std::vector<PostData> feeds;

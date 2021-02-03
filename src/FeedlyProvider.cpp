@@ -13,9 +13,9 @@
 
 #include "FeedlyProvider.h"
 
-#define HOME_PATH getenv("HOME")
 extern std::string TMPDIR;
 
+namespace fs = std::filesystem;
 using namespace std::literals::string_literals;
 
 FeedlyProvider::FeedlyProvider(){
@@ -23,11 +23,14 @@ FeedlyProvider::FeedlyProvider(){
         verboseFlag = false;
 
         TEMP_PATH = TMPDIR + "/temp.txt";
+        const auto configRoot = fs::path{getenv("HOME")} / ".config" / "feednix";
+        configPath = configRoot / "config.json";
+        logPath = configRoot / "log.txt";
 
         Json::Value root;
         Json::Reader reader;
 
-        std::ifstream tokenFile(std::string(std::string(HOME_PATH) + "/.config/feednix/config.json").c_str(), std::ifstream::binary);
+        std::ifstream tokenFile(configPath.c_str(), std::ifstream::binary);
         if(reader.parse(tokenFile, root)){
                 rtrv_count = root["posts_retrive_count"].asString();
         }
@@ -36,8 +39,6 @@ FeedlyProvider::FeedlyProvider(){
 void FeedlyProvider::authenticateUser(){
         Json::Value root;
         Json::Reader reader;
-
-        std::string configPath = std::string(std::string(HOME_PATH) + "/.config/feednix/config.json");
 
         std::ifstream initialConfig(configPath.c_str(), std::ifstream::binary);
         bool parsingSuccesful = reader.parse(initialConfig, root);
@@ -382,8 +383,7 @@ Json::Value FeedlyProvider::curl_retrieve(const std::string& uri, const Json::Va
 }
 void FeedlyProvider::openLogStream(){
         if(!log_stream.is_open()){
-                const char* log_path = std::string(std::string(HOME_PATH) + "/.config/feednix/log.txt").c_str();
-                log_stream.open(log_path, std::ofstream::out | std::ofstream::app);
+                log_stream.open(logPath, std::ofstream::out | std::ofstream::app);
 
                 time_t current = time(NULL);
                 char* dt = ctime(&current);
