@@ -44,11 +44,12 @@ void FeedlyProvider::authenticateUser(){
         bool parsingSuccesful = reader.parse(initialConfig, root);
 
         if(!parsingSuccesful){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "ERROR: Log In Failed - Unable to read from config file" << std::endl;
                 log_stream << reader.getFormattedErrorMessages() << std::endl;
                 exit(EXIT_FAILURE);
         }
+
         if(root["developer_token"] == Json::nullValue || changeTokens){
                 std::cout << "You will now be redirected to Feedly's Developer Log In page..." << std::endl;
                 std::cout << "Please sign in, copy your user id and retrive the token from your email and copy it onto here." << std::endl;
@@ -94,7 +95,7 @@ void FeedlyProvider::authenticateUser(){
         initialConfig.close();
 
         user_data.authToken = (root["developer_token"]).asString();
-        user_data.id = (root["userID"]).asString(); 
+        user_data.id = (root["userID"]).asString();
 }
 const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
         user_data.categories.clear();
@@ -109,7 +110,7 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
                 }
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not get labels" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -136,7 +137,7 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
                         root = curl_retrieve("streams/" + std::string(curl_easy_escape(curl, user_data.categories[category].c_str(), 0)) + "/contents?unreadOnly=true&ranked=newest&count=" + rtrv_count);
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not get posts" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -181,7 +182,7 @@ void FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
                 curl_retrieve("markers", jsonCont);
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not mark post(s) as read" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -203,7 +204,7 @@ void FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
                 curl_retrieve("markers", jsonCont);
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not mark post(s) as unread" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -225,7 +226,7 @@ void FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
                 curl_retrieve("markers", jsonCont);
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not mark post(s) as saved" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -247,7 +248,7 @@ void FeedlyProvider::markPostsUnsaved(const std::vector<std::string>* ids){
                 curl_retrieve("markers", jsonCont);
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not mark post(s) as unsaved" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -269,7 +270,7 @@ void FeedlyProvider::markCategoriesRead(const std::string& id, const std::string
                 curl_retrieve("markers", jsonCont);
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not mark category(ies) as read" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -299,7 +300,7 @@ void FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, 
                 curl_retrieve("subscriptions", jsonCont);
         }
         catch(const std::exception& e){
-                if(!isLogStreamOpen) openLogStream();
+                openLogStream();
                 log_stream << "Could not add subscription" << std::endl;
                 log_stream << e.what() << std::endl;
                 throw;
@@ -389,8 +390,6 @@ void FeedlyProvider::openLogStream(){
                 char* dt = ctime(&current);
 
                 log_stream << "======== " << std::string(dt) << "\n";
-
-                isLogStreamOpen = true;
         }
 }
 void FeedlyProvider::echo(bool on = true){
@@ -403,6 +402,4 @@ void FeedlyProvider::echo(bool on = true){
 }
 void FeedlyProvider::curl_cleanup(){
         curl_global_cleanup();
-        if(log_stream.is_open())
-                log_stream.close();
 }

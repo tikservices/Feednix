@@ -57,7 +57,7 @@ class FeedlyProvider{
                 std::filesystem::path logPath;
                 std::filesystem::path configPath;
                 UserData user_data;
-                bool verboseFlag, changeTokens, isLogStreamOpen=false;
+                bool verboseFlag{}, changeTokens{};
                 std::vector<PostData> feeds;
                 void getCookies();
                 void enableVerbose();
