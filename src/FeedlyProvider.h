@@ -13,6 +13,8 @@
 #ifndef _PROVIDER_H_
 #define _PROVIDER_H_
 
+using CurlString = std::unique_ptr<char, decltype(&curl_free)>;
+
 struct UserData{
         std::map<std::string, std::string> categories;
         std::string id;
@@ -65,6 +67,7 @@ class FeedlyProvider{
                 void extract_galx_value();
                 void echo(bool on);
                 void openLogStream();
+                CurlString escapeCurlString(const std::string& s);
 };
 
 #endif
