@@ -38,7 +38,7 @@ class CursesProvider{
                 void createCategoriesMenu();
                 void createPostsMenu();
                 void changeSelectedItem(MENU* curMenu, int req);
-                void ctgMenuCallback(char* label);
+                void ctgMenuCallback(const char* label);
                 void postsMenuCallback(ITEM* item, bool preview);
                 void markItemRead(ITEM* item);
                 void markItemReadAutomatically(ITEM* item);
