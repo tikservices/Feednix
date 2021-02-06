@@ -121,13 +121,11 @@ void CursesProvider::control(){
                 changeSelectedItem(curMenu, REQ_FIRST_ITEM);
         }
 
-        ITEM* curItem = current_item(curMenu);
-
         while((ch = getch()) != KEY_F(1) && ch != 'q'){
-                curItem = current_item(curMenu);
+                auto curItem = current_item(curMenu);
                 switch(ch){
                         case 10:
-                                if(curMenu == ctgMenu){
+                                if((curMenu == ctgMenu) && (curItem != NULL)){
                                         top = (PANEL *)panel_userptr(top);
 
                                         update_statusline("[Updating stream]", "", false);
@@ -135,7 +133,7 @@ void CursesProvider::control(){
                                         refresh();
                                         update_panels();
 
-                                        ctgMenuCallback(strdup(item_name(current_item(curMenu))));
+                                        ctgMenuCallback(item_name(curItem));
 
                                         top_panel(top);
 
@@ -176,13 +174,16 @@ void CursesProvider::control(){
                                 top_panel(top);
                                 break;
                         case '=':
-                                wclear(viewWin);
-                                update_statusline("[Updating stream]", "", false);
-                                refresh();
+                                if(auto currentCategoryItem = current_item(ctgMenu)){
+                                        wclear(viewWin);
+                                        update_statusline("[Updating stream]", "", false);
+                                        refresh();
 
-                                currentRank = !currentRank;
+                                        currentRank = !currentRank;
 
-                                ctgMenuCallback(strdup(item_name(current_item(ctgMenu))));
+                                        ctgMenuCallback(item_name(currentCategoryItem));
+                                }
+
                                 break;
                         case KEY_DOWN:
                                 changeSelectedItem(curMenu, REQ_DOWN_ITEM);
@@ -196,40 +197,42 @@ void CursesProvider::control(){
                         case 'k':
                                 changeSelectedItem(curMenu, REQ_UP_ITEM);
                                 break;
-                        case 'u':{
-                                        if (!item_opts(curItem)) {
-                                                std::vector<std::string> *temp = new std::vector<std::string>;
-                                                temp->push_back(item_description(curItem));
+                        case 'u':
+                                if((curMenu == postsMenu) && (curItem != NULL) && !item_opts(curItem)){
+                                        std::vector<std::string> *temp = new std::vector<std::string>;
+                                        temp->push_back(item_description(curItem));
 
-                                                update_statusline("[Marking post unread]", NULL, true);
-                                                refresh();
+                                        update_statusline("[Marking post unread]", NULL, true);
+                                        refresh();
 
-                                                std::string errorMessage;
-                                                try{
-                                                        feedly.markPostsUnread(temp);
+                                        std::string errorMessage;
+                                        try{
+                                                feedly.markPostsUnread(temp);
 
-                                                        item_opts_on(curItem, O_SELECTABLE);
-                                                        numRead--;
-                                                        numUnread++;
-                                                }
-                                                catch(const std::exception& e){
-                                                        errorMessage = e.what();
-                                                }
-
-                                                update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
-
-                                                // Prevent an article marked as unread explicitly
-                                                // from being marked as read automatically.
-                                                lastPostSelectionTime = std::chrono::time_point<std::chrono::steady_clock>::max();
+                                                item_opts_on(curItem, O_SELECTABLE);
+                                                numRead--;
+                                                numUnread++;
+                                        }
+                                        catch(const std::exception& e){
+                                                errorMessage = e.what();
                                         }
 
-                                        break;
-                                 }
-                        case 'r':{
+                                        update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
+
+                                        // Prevent an article marked as unread explicitly
+                                        // from being marked as read automatically.
+                                        lastPostSelectionTime = std::chrono::time_point<std::chrono::steady_clock>::max();
+                                }
+
+                                break;
+                        case 'r':
+                                if((curMenu == postsMenu) && (curItem != NULL)){
                                         markItemRead(curItem);
-                                        break;
-                                 }
-                        case 's':{
+                                }
+
+                                break;
+                        case 's':
+                                if((curMenu == postsMenu) && (curItem != NULL)){
                                         std::vector<std::string> *temp = new std::vector<std::string>;
                                         temp->push_back(item_description(curItem));
 
@@ -245,10 +248,11 @@ void CursesProvider::control(){
                                         }
 
                                         update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
+                                }
 
-                                        break;
-                                 }
-                        case 'S':{
+                                break;
+                        case 'S':
+                                if((curMenu == postsMenu) && (curItem != NULL)){
                                         std::vector<std::string> *temp = new std::vector<std::string>;
                                         temp->push_back(item_description(curItem));
 
@@ -264,20 +268,27 @@ void CursesProvider::control(){
                                         }
 
                                         update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
+                                }
 
-                                        break;
-                                 }
+                                break;
                         case 'R':
-                                 wclear(viewWin);
-                                 update_statusline("[Updating stream]", "", false);
-                                 refresh();
+                                if(auto currentCategoryItem = current_item(ctgMenu)){
+                                        wclear(viewWin);
+                                        update_statusline("[Updating stream]", "", false);
+                                        refresh();
 
-                                 ctgMenuCallback(strdup(item_name(current_item(ctgMenu))));
-                                 break;
+                                        ctgMenuCallback(item_name(currentCategoryItem));
+                                }
+
+                                break;
                         case 'o':
-                                 postsMenuCallback(curItem, false);
-                                 break;
-                        case 'O':{
+                                if((curMenu == postsMenu) && (curItem != NULL)){
+                                        postsMenuCallback(curItem, false);
+                                }
+
+                                break;
+                        case 'O':
+                                if((curMenu == postsMenu) && (curItem != NULL)){
                                         termios oldt;
                                         tcgetattr(STDIN_FILENO, &oldt);
                                         termios newt = oldt;
@@ -296,10 +307,11 @@ void CursesProvider::control(){
                                         catch(const std::exception& e){
                                                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
                                         }
-
-                                        break;
                                 }
-                        case 'a':{
+
+                                break;
+                        case 'a':
+                                {
                                         char feed[200];
                                         char title[200];
                                         char ctg[200];
@@ -345,27 +357,31 @@ void CursesProvider::control(){
                                         }
 
                                         update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
-                                        break;
                                 }
-                        case 'A':{
+
+                                break;
+                        case 'A':
+                                if(auto currentCategoryItem = current_item(ctgMenu)){
                                         wclear(viewWin);
                                         update_statusline("[Marking category read]", "", true);
                                         refresh();
 
                                         std::string errorMessage;
                                         try{
-                                                feedly.markCategoriesRead(item_description(current_item(ctgMenu)), lastEntryRead);
+                                                feedly.markCategoriesRead(item_description(currentCategoryItem), lastEntryRead);
                                         }
                                         catch(const std::exception& e){
                                                 update_statusline(errorMessage.c_str(), NULL, errorMessage.empty());
                                         }
 
-                                        ctgMenuCallback(strdup(item_name(curItem)));
+                                        ctgMenuCallback(item_name(currentCategoryItem));
                                         currentCategoryRead = true;
                                         curMenu = ctgMenu;
-                                        break;
                                 }
+
+                                break;
                 }
+
                 update_panels();
                 doupdate();
         }
@@ -467,7 +483,7 @@ void CursesProvider::createPostsMenu(){
                 print_in_center(postsWin, 3, 1, height, width-4, strdup("All Posts Read"), 1);
         }
 }
-void CursesProvider::ctgMenuCallback(char* label){
+void CursesProvider::ctgMenuCallback(const char* label){
         markItemReadAutomatically(current_item(postsMenu));
 
         int startx, height, width;
