@@ -16,6 +16,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <json/json.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "CursesProvider.h"
 
@@ -76,9 +78,6 @@ void CursesProvider::init(){
 
                 if(textBrowser.empty()){
                         textBrowser = root["text_browser"].asString();
-                        if(textBrowser.empty()){
-                                textBrowser = "w3m";
-                        }
                 }
         }
         else{
@@ -86,6 +85,14 @@ void CursesProvider::init(){
                 feedly.curl_cleanup();
                 std::cerr << "ERROR: Couldn't not read config file" << std::endl;
                 exit(EXIT_FAILURE);
+        }
+
+        if(textBrowser.empty()){
+                textBrowser = "w3m";
+        }
+
+        if(textBrowser.at(0) == '~'){
+                textBrowser.replace(0, 1, getenv("HOME"));
         }
 
         if (ctgWinWidth == 0)
@@ -296,9 +303,9 @@ void CursesProvider::control(){
                                         try{
                                                 PostData& data = feedly.getSinglePostData(item_index(curItem));
 #ifdef __APPLE__
-                                                system(std::string("open \"" + data.originURL + "\" > /dev/null &").c_str());
+                                                execute("open", data.originURL.c_str());
 #else
-                                                system(std::string("xdg-open \"" + data.originURL + "\" > /dev/null &").c_str());
+                                                execute("xdg-open", data.originURL.c_str());
 #endif
                                                 markItemRead(curItem);
                                         }
@@ -533,6 +540,7 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         catch (const std::exception& e){
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
         }
+<<<<<<< HEAD
 }
 void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
         auto command = std::string{};
@@ -542,6 +550,16 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
                         if(auto myfile = std::ofstream(previewPath.c_str())){
                                 myfile << postData.content;
                         }
+=======
+
+        std::string command;
+        std::string arg;
+        if(preview){
+                std::ofstream myfile(previewPath.c_str());
+                if (myfile.is_open()){
+                        myfile << container->content;
+                }
+>>>>>>> Fork instead of calling system
 
                         command = "w3m " + previewPath.native();
                 }
@@ -549,15 +567,24 @@ void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
                         command = textBrowser + " \'" + postData.originURL + "\'";
                 }
 
+<<<<<<< HEAD
         }
         catch (const std::exception& e){
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
                 return;
+=======
+                command = "w3m";
+                arg = previewPath.native();
+        }
+        else{
+                command = textBrowser;
+                arg = container->originURL;
+>>>>>>> Fork instead of calling system
         }
 
         def_prog_mode();
         endwin();
-        const auto exitCode = system(command.c_str());
+        const auto exitCode = execute(command.c_str(), arg.c_str());
         reset_prog_mode();
 
         if(exitCode == 0){
@@ -705,6 +732,22 @@ void CursesProvider::update_infoline(const char* info){
         attron(COLOR_PAIR(5));
         mvprintw(LINES - 1, 0, info);
         attroff(COLOR_PAIR(5));
+}
+int CursesProvider::execute(const char* command, const char* arg){
+        const auto pid = fork();
+        if (pid == 0)
+        {
+                execlp(command, command, arg, NULL);
+                std::cerr << "Failed to execute '" << command << "' '" << arg << "'" << std::endl;
+                std::cerr << strerror(errno) << std::endl;
+                exit(errno);
+        }
+        else
+        {
+                int wstatus;
+                wait(&wstatus);
+                return WEXITSTATUS(wstatus);
+        }
 }
 void CursesProvider::clearCategoryItems(){
         for(const auto& ctgItem : ctgItems){

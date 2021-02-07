@@ -50,6 +50,7 @@ class CursesProvider{
                 void clear_statusline();
                 void update_statusline(const char* update, const char* post, bool showCounter);
                 void update_infoline(const char* info);
+                int execute(const char* command, const char* arg);
 };
 
 #endif
