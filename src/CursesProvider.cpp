@@ -303,9 +303,9 @@ void CursesProvider::control(){
                                         try{
                                                 PostData& data = feedly.getSinglePostData(item_index(curItem));
 #ifdef __APPLE__
-                                                execute("open", data.originURL.c_str());
+                                                execute("open", data.originURL);
 #else
-                                                execute("xdg-open", data.originURL.c_str());
+                                                execute("xdg-open", data.originURL);
 #endif
                                                 markItemRead(curItem);
                                         }
@@ -540,53 +540,32 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
         catch (const std::exception& e){
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
         }
-<<<<<<< HEAD
 }
 void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
         auto command = std::string{};
+        auto arg = std::string{};
         try{
                 const auto& postData = feedly.getSinglePostData(item_index(item));
                 if(preview){
                         if(auto myfile = std::ofstream(previewPath.c_str())){
                                 myfile << postData.content;
                         }
-=======
 
-        std::string command;
-        std::string arg;
-        if(preview){
-                std::ofstream myfile(previewPath.c_str());
-                if (myfile.is_open()){
-                        myfile << container->content;
-                }
->>>>>>> Fork instead of calling system
-
-                        command = "w3m " + previewPath.native();
+                        command = "w3m";
+                        arg = previewPath.native();
                 }
                 else{
-                        command = textBrowser + " \'" + postData.originURL + "\'";
+                        command = textBrowser;
+                        arg = postData.originURL;
                 }
 
-<<<<<<< HEAD
         }
         catch (const std::exception& e){
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
                 return;
-=======
-                command = "w3m";
-                arg = previewPath.native();
-        }
-        else{
-                command = textBrowser;
-                arg = container->originURL;
->>>>>>> Fork instead of calling system
         }
 
-        def_prog_mode();
-        endwin();
-        const auto exitCode = execute(command.c_str(), arg.c_str());
-        reset_prog_mode();
-
+        const auto exitCode = execute(command, arg);
         if(exitCode == 0){
                 markItemRead(item);
                 lastEntryRead = item_description(item);
@@ -733,20 +712,31 @@ void CursesProvider::update_infoline(const char* info){
         mvprintw(LINES - 1, 0, info);
         attroff(COLOR_PAIR(5));
 }
-int CursesProvider::execute(const char* command, const char* arg){
-        const auto pid = fork();
-        if (pid == 0)
-        {
-                execlp(command, command, arg, NULL);
+int CursesProvider::execute(const std::string& command, const std::string& arg){
+        def_prog_mode();
+        endwin();
+
+        switch (fork()){
+        case -1:{
+                throw std::runtime_error("Failed to fork");
+        }
+        case 0:{
+                if (close(STDERR_FILENO) == -1){
+                        std::cerr << "Failed to close STDERR: " << strerror(errno) << std::endl;
+                        exit(errno);
+                }
+
+                execlp(command.c_str(), command.c_str(), arg.c_str(), NULL);
                 std::cerr << "Failed to execute '" << command << "' '" << arg << "'" << std::endl;
                 std::cerr << strerror(errno) << std::endl;
                 exit(errno);
         }
-        else
-        {
+        default:{
                 int wstatus;
                 wait(&wstatus);
+                reset_prog_mode();
                 return WEXITSTATUS(wstatus);
+        }
         }
 }
 void CursesProvider::clearCategoryItems(){
