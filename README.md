@@ -1,34 +1,53 @@
 Feednix
 =======
-[![Build Status](https://travis-ci.org/anders-dc/Feednix.svg)](https://travis-ci.org/anders-dc/Feednix)
 
 An ncurses based client for [Feedly](http://feedly.com/).
 
 ## Install
 
-### Distribution Packages
-
-[Arch Linux](https://aur.archlinux.org/packages/feednix/)
-
-### From Source
-
-First run autogen.sh script.
+First run `autogen.sh` script.
 
 Then run your standard make commands. Here is a one liner:
 
-`./configure && make && sudo make install`
+```sh
+./configure && make && sudo make install
+```
+
+### Ubuntu
 
 Thank you @chrisjohnston for mentioning the following dependencies for Ubuntu:
 
-`sudo apt-get install dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev`
+```sh
+sudo apt-get install dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev
+```
+
+`make` may give you the following error.
+
+```
+CursesProvider.cpp:18:10: fatal error: json/json.h: No such file or directory
+18 | #include <json/json.h>
+   |          ^~~~~~~~~~~~~
+```
+
+Give the following `CPPFLAGS` value when you `configure` to work around it.
+
+```sh
+./configure CPPFLAGS='-I/usr/include/jsoncpp'
+```
+
+### macOS
 
 For macOS with [Homebrew](https://brew.sh), install the prerequisites with:
 
-`brew install jsoncpp`
+```sh
+brew install jsoncpp
+```
 
 Install to `/usr/local/bin` with the following:
 
-`./configure --prefix=/usr/local && make && make install`
+```sh
+./configure --prefix=/usr/local && make && make install
+```
 
 ## Clarification on Sign In Method (PLEASE READ)
 
@@ -73,35 +92,36 @@ to keep this project open source, hence this new method.
 
 Feednix will create a setting file on the first launch at `~/.config/feednix/config.json`.
 
-* `seconds_to_mark_as_read` (integer, default = `0`) : Indicates how many seconds an article should have been shown for when Feednix marks it as read automatically.  A negative value indicates that Feednix won't mark an article as read unless you does so by "r" key.
+* `seconds_to_mark_as_read` (integer, default = `0`): Indicates how many seconds an article should have been shown for when Feednix marks it as read automatically.  A negative value indicates that Feednix won't mark an article as read unless you does so by "r" key.
+* `text_browser` (string, default = `w3m`): Specifies a text-based web browser to use for opening a post inside the terminal.
 
 ## Contributing
 
-Please visit this [page](https://feednix-jarkore.rhcloud.com) for details.
+Please feel free to send a pull request.
 
 ## Changelog
 
-**The follwoing only lists major updates. For everything in between please see the ChangeLog**
+**The follwoing only lists major updates. For everything in between please see [the change log](ChangeLog).**
 
 ### v0.9
+
 Once again many thanks to [lejenome](https://github.com/lejenome) for the following:
 
 * fix panels array length
 * add travis-ci config file
-* use global TMPDIR var instead of class depend tmpdir var … 
+* use global TMPDIR var instead of class depend tmpdir var
 * move tmpdir creation to FeedluProvider and use it for temp.txt file too
 * make update_statusline char\* params const
 * minimaze updating info bar code into a common function
 * replace tabs with 8 spaces
-* add .gitignore file 
+* add .gitignore file
 
 ### v0.8
 
-Many thanks to [lejenome](https://github.com/lejenome) for the following: 
+Many thanks to [lejenome](https://github.com/lejenome) for the following:
 
 * use $TMPDIR (mkdtemp) for preview.html file to avoid unneeded disk access
 * add a new panel to shown a quick preview for current selected item (html formated by w3m) instead of the need to open w3m for previews
 * add 3 new config options to add some interface tweaks (ctg_win_width: to change ctgWin width, view_win_height: to set viewWin height, view_win_height_per: to set viewWin height percent that can be used instead of the previous option and overwirte it)
 * fix unreading unreaded post when handling "u"
 * fix mark as read aleardy marked as read posts on "O" handling
-
