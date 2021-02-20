@@ -37,16 +37,16 @@ class FeedlyProvider{
         public:
                 FeedlyProvider(const std::filesystem::path& tmpDir);
                 void authenticateUser();
-                void markPostsRead(const std::vector<std::string>* ids);
-                void markPostsSaved(const std::vector<std::string>* ids);
-                void markPostsUnsaved(const std::vector<std::string>* ids);
+                void markPostsRead(const std::vector<std::string>& ids);
+                void markPostsSaved(const std::vector<std::string>& ids);
+                void markPostsUnsaved(const std::vector<std::string>& ids);
                 void markCategoriesRead(const std::string& id, const std::string& lastReadEntryId);
-                void markPostsUnread(const std::vector<std::string>* ids);
+                void markPostsUnread(const std::vector<std::string>& ids);
                 void addSubscription(bool newCategory, const std::string& feed, std::vector<std::string> categories, const std::string& title = "");
-                const std::vector<PostData>* giveStreamPosts(const std::string& category, bool whichRank = 0);
-                const std::map<std::string, std::string>* getLabels();
+                const std::vector<PostData>& giveStreamPosts(const std::string& category, bool whichRank = 0);
+                const std::map<std::string, std::string>& getLabels();
                 const std::string getUserId();
-                PostData* getSinglePostData(const int index);
+                PostData& getSinglePostData(int index);
                 void setVerbose(bool value);
                 void setChangeTokensFlag(bool value);
                 void curl_cleanup();

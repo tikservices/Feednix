@@ -204,15 +204,12 @@ void CursesProvider::control(){
                                 break;
                         case 'u':
                                 if((curMenu == postsMenu) && (curItem != NULL) && !item_opts(curItem)){
-                                        std::vector<std::string> *temp = new std::vector<std::string>;
-                                        temp->push_back(item_description(curItem));
-
                                         update_statusline("[Marking post unread]", NULL, true);
                                         refresh();
 
                                         std::string errorMessage;
                                         try{
-                                                feedly.markPostsUnread(temp);
+                                                feedly.markPostsUnread({item_description(curItem)});
 
                                                 item_opts_on(curItem, O_SELECTABLE);
                                                 numRead--;
@@ -238,15 +235,12 @@ void CursesProvider::control(){
                                 break;
                         case 's':
                                 if((curMenu == postsMenu) && (curItem != NULL)){
-                                        std::vector<std::string> *temp = new std::vector<std::string>;
-                                        temp->push_back(item_description(curItem));
-
                                         update_statusline("[Marking post saved]", NULL, true);
                                         refresh();
 
                                         std::string errorMessage;
                                         try{
-                                                feedly.markPostsSaved(temp);
+                                                feedly.markPostsSaved({item_description(curItem)});
                                         }
                                         catch(const std::exception& e){
                                                 errorMessage = e.what();
@@ -258,15 +252,12 @@ void CursesProvider::control(){
                                 break;
                         case 'S':
                                 if((curMenu == postsMenu) && (curItem != NULL)){
-                                        std::vector<std::string> *temp = new std::vector<std::string>;
-                                        temp->push_back(item_description(curItem));
-
                                         update_statusline("[Marking post Unsaved]", NULL, true);
                                         refresh();
 
                                         std::string errorMessage;
                                         try{
-                                                feedly.markPostsUnsaved(temp);
+                                                feedly.markPostsUnsaved({item_description(curItem)});
                                         }
                                         catch(const std::exception& e){
                                                 errorMessage = e.what();
@@ -301,11 +292,11 @@ void CursesProvider::control(){
                                         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
                                         try{
-                                                PostData* data = feedly.getSinglePostData(item_index(curItem));
+                                                PostData& data = feedly.getSinglePostData(item_index(curItem));
 #ifdef __APPLE__
-                                                system(std::string("open \"" + data->originURL + "\" > /dev/null &").c_str());
+                                                system(std::string("open \"" + data.originURL + "\" > /dev/null &").c_str());
 #else
-                                                system(std::string("xdg-open \"" + data->originURL + "\" > /dev/null &").c_str());
+                                                system(std::string("xdg-open \"" + data.originURL + "\" > /dev/null &").c_str());
 #endif
                                                 markItemRead(curItem);
                                         }
@@ -396,11 +387,11 @@ void CursesProvider::control(){
 void CursesProvider::createCategoriesMenu(){
         clearCategoryItems();
         try{
-                const std::map<std::string, std::string> *labels = feedly.getLabels();
-                ctgItems.push_back(new_item("All", labels->at("All").c_str()));
-                ctgItems.push_back(new_item("Saved", labels->at("Saved").c_str()));
-                ctgItems.push_back(new_item("Uncategorized", labels->at("Uncategorized").c_str()));
-                for(const auto& [label, id] : *labels){
+                const auto& labels = feedly.getLabels();
+                ctgItems.push_back(new_item("All", labels.at("All").c_str()));
+                ctgItems.push_back(new_item("Saved", labels.at("Saved").c_str()));
+                ctgItems.push_back(new_item("Uncategorized", labels.at("Uncategorized").c_str()));
+                for(const auto& [label, id] : labels){
                         if((label != "All") && (label != "Saved") && (label != "Uncategorized")){
                                 ctgItems.push_back(new_item(label.c_str(), id.c_str()));
                         }
@@ -437,22 +428,21 @@ void CursesProvider::createPostsMenu(){
         int height, width;
 
         clearPostItems();
-        const std::vector<PostData>* posts;
         try{
-                posts = feedly.giveStreamPosts("All", currentRank);
+                const auto& posts = feedly.giveStreamPosts("All", currentRank);
+                for(const auto& post : posts){
+                        postsItems.push_back(new_item(post.title.c_str(), post.id.c_str()));
+                }
         }
         catch(const std::exception& e){
-                posts = NULL;
+                clearPostItems();
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
         }
 
-        if(posts != NULL && posts->size() > 0){
-                totalPosts = posts->size();
-                numUnread = totalPosts;
-                for(const auto& post : *posts){
-                        postsItems.push_back(new_item(post.title.c_str(), post.id.c_str()));
-                }
+        totalPosts = postsItems.size();
+        numUnread = totalPosts;
 
+        if(!postsItems.empty()){
                 postsItems.push_back(NULL);
                 postsMenu = new_menu(postsItems.data());
                 lastEntryRead = item_description(postsItems.at(0));
@@ -484,7 +474,7 @@ void CursesProvider::createPostsMenu(){
 
         post_menu(postsMenu);
 
-        if(posts == NULL){
+        if(numUnread == 0){
                 print_in_center(postsWin, 3, 1, height, width-4, strdup("All Posts Read"), 1);
         }
 }
@@ -498,16 +488,19 @@ void CursesProvider::ctgMenuCallback(const char* label){
         getbegyx(postsWin, starty, startx);
 
         std::string errorMessage;
-        const std::vector<PostData>* posts;
+        clearPostItems();
         try{
-                posts = feedly.giveStreamPosts(label, currentRank);
+                const auto& posts = feedly.giveStreamPosts(label, currentRank);
+                for(const auto& post : posts){
+                        postsItems.push_back(new_item(post.title.c_str(), post.id.c_str()));
+                }
         }
         catch(const std::exception& e){
-                posts = NULL;
+                clearPostItems();
                 errorMessage = e.what();
         }
 
-        if(posts == NULL){
+        if(postsItems.empty()){
                 totalPosts = 0;
                 numRead = 0;
                 numUnread = 0;
@@ -525,14 +518,9 @@ void CursesProvider::ctgMenuCallback(const char* label){
                 return;
         }
 
-        totalPosts = posts->size();
+        totalPosts = postsItems.size();
         numRead = 0;
         numUnread = totalPosts;
-
-        clearPostItems();
-        for(const auto& post : *posts){
-                postsItems.push_back(new_item(post.title.c_str(), post.id.c_str()));
-        }
 
         postsItems.push_back(NULL);
 
@@ -563,66 +551,53 @@ void CursesProvider::changeSelectedItem(MENU* curMenu, int req){
 
         markItemReadAutomatically(previousItem);
 
-        PostData* data;
         try{
-                data = feedly.getSinglePostData(item_index(curItem));
-        }
-        catch (const std::exception& e){
-                data = NULL;
-                update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
-        }
+                const auto& postData = feedly.getSinglePostData(item_index(curItem));
+                if(auto myfile = std::ofstream(previewPath.c_str())){
+                        myfile << postData.content;
+                }
 
-        std::ofstream myfile(previewPath.c_str());
-
-        if (myfile.is_open() && (data != NULL)){
-                myfile << data->content;
-        }
-
-        myfile.close();
-
-        std::string content;
-        char buffer[256];
-        const auto command = "w3m -dump -cols " + std::to_string(COLS - 2) + " " + previewPath.native();
-        if(const auto stream = PipeStream(popen(command.c_str(), "r"), &pclose)){
-                while(!feof(stream.get())){
-                        if(fgets(buffer, 256, stream.get()) != NULL){
-                                content.append(buffer);
+                std::string content;
+                char buffer[256];
+                const auto command = "w3m -dump -cols " + std::to_string(COLS - 2) + " " + previewPath.native();
+                if(const auto stream = PipeStream(popen(command.c_str(), "r"), &pclose)){
+                        while(!feof(stream.get())){
+                                if(fgets(buffer, 256, stream.get()) != NULL){
+                                        content.append(buffer);
+                                }
                         }
                 }
-        }
 
-        wclear(viewWin);
-        mvwprintw(viewWin, 1, 1, content.c_str());
-        wrefresh(viewWin);
-        if(data != NULL){
-                update_statusline(NULL, std::string(data->originTitle + " - " + data->title).c_str(), true);
-        }
+                wclear(viewWin);
+                mvwprintw(viewWin, 1, 1, content.c_str());
+                wrefresh(viewWin);
+                update_statusline(NULL, (postData.originTitle + " - " + postData.title).c_str(), true);
 
-        update_panels();
+                update_panels();
+        }
+        catch (const std::exception& e){
+                update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
+        }
 }
 void CursesProvider::postsMenuCallback(ITEM* item, bool preview){
-        PostData* container;
+        auto command = std::string{};
         try{
-                container = feedly.getSinglePostData(item_index(item));
+                const auto& postData = feedly.getSinglePostData(item_index(item));
+                if(preview){
+                        if(auto myfile = std::ofstream(previewPath.c_str())){
+                                myfile << postData.content;
+                        }
+
+                        command = "w3m " + previewPath.native();
+                }
+                else{
+                        command = textBrowser + " \'" + postData.originURL + "\'";
+                }
+
         }
         catch (const std::exception& e){
                 update_statusline(e.what(), NULL /*post*/, false /*showCounter*/);
                 return;
-        }
-
-        auto command = std::string{};
-        if(preview){
-                std::ofstream myfile(previewPath.c_str());
-                if (myfile.is_open()){
-                        myfile << container->content;
-                }
-
-                myfile.close();
-
-                command = "w3m " + previewPath.native();
-        }
-        else{
-                command = textBrowser + " \'" + container->originURL + "\'";
         }
 
         def_prog_mode();
@@ -652,11 +627,8 @@ void CursesProvider::markItemRead(ITEM* item){
 
                 std::string errorMessage;
                 try{
-                        PostData* container = feedly.getSinglePostData(item_index(item));
-                        std::vector<std::string> *temp = new std::vector<std::string>;
-                        temp->push_back(container->id);
-
-                        feedly.markPostsRead(const_cast<std::vector<std::string>*>(temp));
+                        const auto& postData = feedly.getSinglePostData(item_index(item));
+                        feedly.markPostsRead({postData.id});
                         numUnread--;
                         numRead++;
                 }
