@@ -97,7 +97,7 @@ void FeedlyProvider::authenticateUser(){
         user_data.authToken = (root["developer_token"]).asString();
         user_data.id = (root["userID"]).asString();
 }
-const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
+const std::map<std::string, std::string>& FeedlyProvider::getLabels(){
         user_data.categories.clear();
         user_data.categories["All"] = "user/" + user_data.id + "/category/global.all";
         user_data.categories["Saved"] = "user/" + user_data.id + "/tag/global.saved";
@@ -116,17 +116,18 @@ const std::map<std::string, std::string>* FeedlyProvider::getLabels(){
                 throw;
         }
 
-        return &(user_data.categories);
+        return user_data.categories;
 }
 CurlString FeedlyProvider::escapeCurlString(const std::string& s){
         return CurlString(curl_easy_escape(curl, s.c_str(), 0), &curl_free);
 }
-const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& category, bool whichRank){
+const std::vector<PostData>& FeedlyProvider::giveStreamPosts(const std::string& category, bool whichRank){
         feeds.clear();
 
         std::string rank = "newest";
-        if(whichRank)
+        if(whichRank){
                 rank = "oldest";
+        }
 
         Json::Value root;
         try{
@@ -154,10 +155,6 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
                 throw;
         }
 
-        if(root["items"].size() == 0){
-                return NULL;
-        }
-
         for(const auto& item : root["items"]){
                 auto url = std::string{};
                 for(const auto& alternate : item["alternate"]){
@@ -175,16 +172,17 @@ const std::vector<PostData>* FeedlyProvider::giveStreamPosts(const std::string& 
                     item["origin"]["title"].asString()});
         }
 
-        return &(feeds);
+        return feeds;
 }
-void FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
+void FeedlyProvider::markPostsRead(const std::vector<std::string>& ids){
         Json::Value jsonCont;
         Json::Value array;
 
         jsonCont["type"] = "entries";
 
-        for(std::vector<std::string>::const_iterator it = ids->begin(); it != ids->end(); ++it)
-                array.append("entryIds") = *it;
+        for(const auto& id : ids){
+                array.append("entryIds") = id;
+        }
 
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "markAsRead";
@@ -199,14 +197,15 @@ void FeedlyProvider::markPostsRead(const std::vector<std::string>* ids){
                 throw;
         }
 }
-void FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
+void FeedlyProvider::markPostsUnread(const std::vector<std::string>& ids){
         Json::Value jsonCont;
         Json::Value array;
 
         jsonCont["type"] = "entries";
 
-        for(std::vector<std::string>::const_iterator it = ids->begin(); it != ids->end(); ++it)
-                array.append("entryIds") = *it;
+        for(const auto& id : ids){
+                array.append("entryIds") = id;
+        }
 
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "keepUnread";
@@ -221,14 +220,15 @@ void FeedlyProvider::markPostsUnread(const std::vector<std::string>* ids){
                 throw;
         }
 }
-void FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
+void FeedlyProvider::markPostsSaved(const std::vector<std::string>& ids){
         Json::Value jsonCont;
         Json::Value array;
 
         jsonCont["type"] = "entries";
 
-        for(std::vector<std::string>::const_iterator it = ids->begin(); it != ids->end(); ++it)
-                array.append("entryIds") = *it;
+        for(const auto& id : ids){
+                array.append("entryIds") = id;
+        }
 
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "markAsSaved";
@@ -243,14 +243,15 @@ void FeedlyProvider::markPostsSaved(const std::vector<std::string>* ids){
                 throw;
         }
 }
-void FeedlyProvider::markPostsUnsaved(const std::vector<std::string>* ids){
+void FeedlyProvider::markPostsUnsaved(const std::vector<std::string>& ids){
         Json::Value jsonCont;
         Json::Value array;
 
         jsonCont["type"] = "entries";
 
-        for(std::vector<std::string>::const_iterator it = ids->begin(); it != ids->end(); ++it)
-                array.append("entryIds") = *it;
+        for(const auto& id : ids){
+                array.append("entryIds") = id;
+        }
 
         jsonCont["entryIds"] = array;
         jsonCont["action"] = "markAsUnsaved";
@@ -296,10 +297,10 @@ void FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, 
         jsonCont["id"] = "feed/" + feed;
         jsonCont["title"] = title;
 
-        if(categories.size() > 0){
-                for(auto it = categories.begin(); it != categories.end(); ++it){
-                        jsonCont["categories"][i]["id"] = user_data.categories[*it];
-                        jsonCont["categories"][i]["label"] = *it;
+        if(!categories.empty()){
+                for(const auto& category : categories){
+                        jsonCont["categories"][i]["id"] = user_data.categories[category];
+                        jsonCont["categories"][i]["label"] = category;
                         i++;
                 }
         }
@@ -318,8 +319,8 @@ void FeedlyProvider::addSubscription(bool newCategory, const std::string& feed, 
         }
 }
 
-PostData* FeedlyProvider::getSinglePostData(const int index){
-        return &(feeds[index]);
+PostData& FeedlyProvider::getSinglePostData(int index){
+        return feeds.at(index);
 }
 
 const std::string FeedlyProvider::getUserId(){
