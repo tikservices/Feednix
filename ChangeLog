@@ -1,6 +1,18 @@
+0.9.3
+==========
+* added text_browser option
+* added seconds_to_mark_as_read setting
+* added the full support for wide characters
+* fixed build and runtime errors on macOS
+* fixed a bug detecting a wrong post URL for some feeds
+* fixed a bug failing to launch a browser in a console session
+* fixed memory leaks and segmentation faults
+* fixed some typos in messages
+* fixed some build warnings
+
 0.9.2
 ==========
-* added unicode supprot (I think)
+* added unicode support (I think)
 * fixed issue with some characters not loading properly
 
 0.9.1
@@ -15,7 +27,7 @@ Once again many thanks to lejenome for the following:
 
 * fix panels array length
 * add travis-ci config file
-* use global TMPDIR var instead of class depend tmpdir var …
+* use global TMPDIR var instead of class depend tmpdir var
 * move tmpdir creation to FeedluProvider and use it for temp.txt
 * file too
 * make update_statusline char* params const
@@ -46,32 +58,30 @@ Once again many thanks to lejenome for the following:
 * fixed bug causing no preview to show on program start
 * misc bug fixes
 
-
 0.8
 ==========
 Many thanks to lejenome for the following:
 
 * use $TMPDIR (mkdtemp) for preview.html file to avoid unneeded disk access
-	* add a new panel to shown a quick preview for current selected item (html formated by w3m) instead of the need to open w3m for previews
+* add a new panel to shown a quick preview for current selected item (html formated by w3m) instead of the need to open w3m for previews
 * add 3 new config options to add some interface tweaks (ctg_win_width: to change ctgWin width, view_win_height: to set viewWin height, view_win_height_per: to set viewWin height percent that can be used instead of the previous option and overwirte it)
-	* fix unreading unreaded post when handling "u"
-	* fix mark as read aleardy marked as read posts on "O" handling
+* fix unreading unreaded post when handling "u"
+* fix mark as read aleardy marked as read posts on "O" handling
 
 
-
-	0.7.2
-	==========
-	* added save and unsave options
+0.7.2
+==========
+* added save and unsave options
 * fixed seg fault caused by no posts exisiting (all posts had been read)
-	* fixed bug involving pressing enter before anything else causing a seg fault
-	* other minor bugs fixes
+* fixed bug involving pressing enter before anything else causing a seg fault
+* other minor bugs fixes
 
-	0.7.1
-	==========
-	* code refraction
+0.7.1
+==========
+* code refraction
 
-	0.7
-	==========
-	* changed log in method to developer tokens
-	* added options to manually change developer tokens
+0.7
+==========
+* changed log in method to developer tokens
+* added options to manually change developer tokens
 
