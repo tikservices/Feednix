@@ -21,20 +21,6 @@ Thank you @chrisjohnston for mentioning the following dependencies for Ubuntu:
 sudo apt-get install dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev
 ```
 
-`make` may give you the following error.
-
-```
-CursesProvider.cpp:18:10: fatal error: json/json.h: No such file or directory
-18 | #include <json/json.h>
-   |          ^~~~~~~~~~~~~
-```
-
-Give the following `CPPFLAGS` value when you `configure` to work around it.
-
-```sh
-./configure CPPFLAGS='-I/usr/include/jsoncpp'
-```
-
 ### macOS
 
 For macOS with [Homebrew](https://brew.sh), install the prerequisites with:
