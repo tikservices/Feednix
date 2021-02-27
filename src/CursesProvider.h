@@ -43,7 +43,7 @@ class CursesProvider{
                 void postsMenuCallback(ITEM* item, bool preview);
                 void markItemRead(ITEM* item);
                 void markItemReadAutomatically(ITEM* item);
-                void renderWindow(WINDOW *win, const char *label, int label_color, bool highlight);
+                void renderWindow(WINDOW *win, const char *label, int labelColor, bool highlight);
                 void printInMiddle(WINDOW *win, int starty, int startx, int width, const char *string, chtype color);
                 void printInCenter(WINDOW *win, int starty, int startx, int height, int width, const char *string, chtype color);
                 void clear_statusline();
