@@ -652,7 +652,7 @@ void CursesProvider::markItemReadAutomatically(ITEM* item){
 
         lastPostSelectionTime = now;
 }
-void CursesProvider::renderWindow(WINDOW *win, const char *label, int label_color, bool highlight){
+void CursesProvider::renderWindow(WINDOW *win, const char *label, int labelColor, bool highlight){
         int startx, width;
         [[maybe_unused]] int starty, height;
 
@@ -664,13 +664,13 @@ void CursesProvider::renderWindow(WINDOW *win, const char *label, int label_colo
         mvwaddch(win, 2, width - 1, ACS_RTEE);
 
         if(highlight){
-                wattron(win, COLOR_PAIR(label_color));
+                wattron(win, COLOR_PAIR(labelColor));
                 box(win, 0, 0);
                 mvwaddch(win, 2, 0, ACS_LTEE);
                 mvwhline(win, 2, 1, ACS_HLINE, width - 2);
                 mvwaddch(win, 2, width - 1, ACS_RTEE);
-                printInMiddle(win, 1, 0, width, label, COLOR_PAIR(label_color));
-                wattroff(win, COLOR_PAIR(label_color));
+                printInMiddle(win, 1, 0, width, label, COLOR_PAIR(labelColor));
+                wattroff(win, COLOR_PAIR(labelColor));
         }
         else{
                 wattron(win, COLOR_PAIR(2));
