@@ -402,9 +402,14 @@ void FeedlyProvider::openLogStream(){
                 log_stream.open(logPath, std::ofstream::out | std::ofstream::app);
 
                 time_t current = time(NULL);
-                char* dt = ctime(&current);
+                struct tm localTime{};
+                localtime_r(&current, &localTime);
 
-                log_stream << "======== " << std::string(dt) << "\n";
+                auto buffer = std::array<char, 64>{};
+                if(const auto result = strftime(buffer.data(), buffer.size(), "%a, %d %b %Y %T %z", &localTime); result > 0)
+                {
+                        log_stream << "======== " << buffer.data() << std::endl;
+                }
         }
 }
 void FeedlyProvider::echo(bool on = true){
