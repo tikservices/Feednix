@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+
 #include <curses.h>
 #include <menu.h>
 #include <panel.h>
@@ -20,7 +21,7 @@ class CursesProvider{
                 ~CursesProvider();
         private:
                 FeedlyProvider feedly;
-                WINDOW *ctgWin, *postsWin, *viewWin;
+                WINDOW *ctgWin, *postsWin, *viewWin, *ctgMenuWin, *postsMenuWin;
                 PANEL  *panels[3], *top;
                 std::vector<ITEM*> ctgItems{};
                 std::vector<ITEM*> postsItems{};
@@ -30,10 +31,10 @@ class CursesProvider{
                 std::chrono::seconds secondsToMarkAsRead;
                 std::string textBrowser;
                 const std::filesystem::path previewPath;
-                bool currentRank = 0;
-                int totalPosts = 0, numRead = 0, numUnread = 0;
+                bool currentRank{};
+                unsigned int totalPosts{};
+                unsigned int numUnread{};
                 int viewWinHeightPer = VIEW_WIN_HEIGHT_PER, viewWinHeight = 0, ctgWinWidth = CTG_WIN_WIDTH;
-                bool currentCategoryRead{};
                 void clearCategoryItems();
                 void clearPostItems();
                 void createCategoriesMenu();
@@ -45,7 +46,7 @@ class CursesProvider{
                 void markItemReadAutomatically(ITEM* item);
                 void renderWindow(WINDOW *win, const char *label, int labelColor, bool highlight);
                 void printInMiddle(WINDOW *win, int starty, int startx, int width, const char *string, chtype color);
-                void printInCenter(WINDOW *win, int starty, int startx, int height, int width, const char *string, chtype color);
+                void printPostMenuMessage(const std::string& message);
                 void clear_statusline();
                 void update_statusline(const char* update, const char* post, bool showCounter);
                 void update_infoline(const char* info);
