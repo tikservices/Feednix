@@ -36,6 +36,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+    - name: apt-get update
+      run: sudo apt-get update
     - name: apt-get install
       run: sudo apt-get --yes install dh-autoreconf libjsoncpp-dev libcurl4-gnutls-dev libncurses5-dev
 
