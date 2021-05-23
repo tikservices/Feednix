@@ -21,7 +21,6 @@
 
 #include "CursesProvider.h"
 
-#define CTRLD   4
 #define POSTS_STATUSLINE "Enter: See Preview  A: mark all read  u: mark unread  r: mark read  = : change sort type s: mark saved  S: mark unsaved R: refresh  o: Open in plain-text  O: Open in Browser  F1: exit"
 #define CTG_STATUSLINE "Enter: Fetch Stream  A: mark all read  R: refresh  F1: exit"
 
@@ -30,6 +29,12 @@
 namespace fs = std::filesystem;
 using namespace std::literals::string_literals;
 using PipeStream = std::unique_ptr<FILE, decltype(&pclose)>;
+
+static void throwIfError(int result, const std::string& action){
+        if(result == ERR){
+                throw std::runtime_error("Failed to " + action);
+        }
+}
 
 CursesProvider::CursesProvider(const fs::path& tmpPath, bool verbose, bool change):
         feedly{FeedlyProvider(tmpPath)},
@@ -713,17 +718,25 @@ void CursesProvider::update_infoline(const char* info){
         attroff(COLOR_PAIR(5));
 }
 int CursesProvider::execute(const std::string& command, const std::string& arg){
-        def_prog_mode();
-        endwin();
+        throwIfError(def_prog_mode(), "make the program mode default");
+        throwIfError(endwin(), "end the curses window");
 
-        switch (fork()){
+        switch(fork()){
         case -1:{
                 throw std::runtime_error("Failed to fork");
         }
         case 0:{
-                if (close(STDERR_FILENO) == -1){
-                        std::cerr << "Failed to close STDERR: " << strerror(errno) << std::endl;
-                        exit(errno);
+                // Suppress the standard output from a web browser in a GUI session
+                // (detected based on DISPLAY and WAYLAND_DISPLAY environment variables)
+                // because such a browser may output error messages to the standard output.
+                if(getenv("DISPLAY") || getenv("WAYLAND_DISPLAY")){
+                        if (close(STDOUT_FILENO) == -1){
+                                std::cerr << "Warning: Feednix failed to close STDOUT (" << strerror(errno) << ")" << std::endl;
+                        }
+                }
+
+                if(close(STDERR_FILENO) == -1){
+                        std::cerr << "Warning: Feednix failed to close STDERR (" << strerror(errno) << ")" << std::endl;
                 }
 
                 execlp(command.c_str(), command.c_str(), arg.c_str(), NULL);
@@ -734,7 +747,7 @@ int CursesProvider::execute(const std::string& command, const std::string& arg){
         default:{
                 int wstatus;
                 wait(&wstatus);
-                reset_prog_mode();
+                throwIfError(reset_prog_mode(), "update the screen");
                 return WEXITSTATUS(wstatus);
         }
         }
